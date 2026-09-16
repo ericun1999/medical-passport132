@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>填寫醫療 Passport</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; }
+        
+        /* 自訂輸入框嘅共用樣式，令程式碼更簡潔 */
+        .form-input {
+            width: 100%;
+            margin-top: 0.25rem;
+            padding: 0.75rem 1rem;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+        .form-input:focus {
+            background-color: #ffffff;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .form-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen text-slate-800 p-4 flex justify-center items-center">
+
+    <div class="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden my-4">
+        
+        <!-- 頂部：返回按鈕與標題 -->
+        <div class="bg-gradient-to-r from-blue-700 to-blue-900 p-5 text-white flex items-center relative">
+            <button class="w-8 h-8 flex justify-center items-center rounded-full bg-white/20 hover:bg-white/30 transition-colors">
+                <i class="fa-solid fa-chevron-left text-sm"></i>
+            </button>
+            <h1 class="text-xl font-bold ml-4 tracking-wide">建立醫療 Passport</h1>
+            
+            <!-- 語言切換 (縮小版) -->
+            <div class="absolute right-5">
+                <i class="fa-solid fa-globe text-white/80"></i>
+            </div>
+        </div>
+
+        <!-- 表單內容區 -->
+        <div class="p-6">
+            <form id="passportForm" class="space-y-4">
+                
+                <!-- 姓名 -->
+                <div>
+                    <label class="form-label">姓名 Full Name *</label>
+                    <input type="text" class="form-input" placeholder="請輸入全名" required>
+                </div>
+
+                <!-- 血型與緊急聯絡人 (並排顯示) -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="form-label">血型 Blood Type</label>
+                        <select class="form-input text-slate-600">
+                            <option value="">請選擇</option>
+                            <option value="A">A </option>
+                            <option value="B">B </option>
+                            <option value="O">O </option>
+                            <option value="AB">AB </option>
+                            <option value="Rh">Rh </option>
+                            <option value="Unknown">不清楚</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="form-label">緊急聯絡人電話</label>
+                        <input type="tel" class="form-input" placeholder="聯絡人號碼">
+                    </div>
+                </div>
+
+                <!-- 病史 -->
+                <div>
+                    <label class="form-label">病史 Medical History</label>
+                    <textarea class="form-input resize-none h-24" placeholder="例如：高血壓、糖尿病... (無則留白)"></textarea>
+                </div>
+
+                <!-- 藥物過敏 -->
+                <div>
+                    <label class="form-label">藥物過敏 Allergies</label>
+                    <input type="text" class="form-input" placeholder="例如：盤尼西林 (無則填無)">
+                </div>
+
+                <!-- 常服用藥物 -->
+                <div>
+                    <label class="form-label">常服用藥物 Current Medications</label>
+                    <input type="text" class="form-input" placeholder="例如：阿斯匹靈 每天一次">
+                </div>
+
+                <!-- 提交按鈕 -->
+                <button type="submit" class="w-full mt-6 bg-blue-600 text-white font-bold text-lg py-4 rounded-xl hover:bg-blue-700 active:scale-95 transition-all shadow-md hover:shadow-lg flex justify-center items-center space-x-2">
+                    <i class="fa-solid fa-qrcode"></i>
+                    <span>生成專屬 Passport</span>
+                </button>
+            </form>
+        </div>
+        
+    </div>
+
+</body>
+</html>

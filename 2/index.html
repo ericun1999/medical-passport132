@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧醫療與藥盒管理系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; }
+        .page { display: none; }
+        .page.active { display: flex; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-900 min-h-screen text-slate-800 flex justify-center items-center">
+
+    <!-- 手機外框容器 -->
+    <div class="w-full max-w-md bg-slate-50 h-[100dvh] md:h-[850px] md:rounded-3xl shadow-2xl relative overflow-hidden flex flex-col">
+
+        <!-- ================= 頁面 1：主頁 (Home) ================= -->
+        <div id="page-home" class="page active flex-col h-full bg-slate-50">
+            <div class="bg-gradient-to-r from-blue-700 to-blue-900 p-6 text-white relative">
+                <div class="absolute top-4 right-4">
+                    <select id="langSelect" onchange="changeLanguage(this.value)" class="bg-white/20 border border-white/30 text-white text-sm rounded-lg p-2 outline-none backdrop-blur-sm cursor-pointer">
+                        <option class="text-black" value="zh-HK">繁體中文</option>
+                        <option class="text-black" value="zh-CN">简体中文</option>
+                        <option class="text-black" value="en">English</option>
+                        <option class="text-black" value="ja">日本語</option>
+                        <option class="text-black" value="ko">한국어</option>
+                        <option class="text-black" value="pt">Português</option>
+                        <option class="text-black" value="es">Español</option>
+                    </select>
+                </div>
+                <h1 data-i18n="homeTitle" class="text-2xl font-bold mt-8 tracking-wide">智慧藥盒管理</h1>
+                <p data-i18n="homeSub" class="text-blue-100 text-sm mt-1">守護您嘅健康與用藥安全</p>
+            </div>
+
+            <div class="p-6 space-y-4 flex-1">
+                <button onclick="switchPage('page-passport-form')" class="w-full flex items-center p-4 bg-white border border-slate-200 rounded-2xl hover:bg-blue-50 transition-all shadow-sm group">
+                    <div class="w-12 h-12 rounded-full bg-blue-100 flex justify-center items-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                        <i class="fa-solid fa-id-card text-xl"></i>
+                    </div>
+                    <div class="ml-4 text-left">
+                        <h2 data-i18n="btnPassport" class="font-bold text-lg">醫療 Passport</h2>
+                        <p data-i18n="descPassport" class="text-xs text-slate-500 mt-1">填寫資料、血型與緊急聯絡人</p>
+                    </div>
+                </button>
+
+                <button onclick="switchPage('page-scan'); startCamera();" class="w-full flex items-center p-4 bg-white border border-slate-200 rounded-2xl hover:bg-emerald-50 transition-all shadow-sm group">
+                    <div class="w-12 h-12 rounded-full bg-emerald-100 flex justify-center items-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                        <i class="fa-solid fa-camera text-xl"></i>
+                    </div>
+                    <div class="ml-4 text-left">
+                        <h2 data-i18n="btnScan" class="font-bold text-lg">掃描藥物</h2>
+                        <p data-i18n="descScan" class="text-xs text-slate-500 mt-1">AI 辨識藥物並設定服藥時間</p>
+                    </div>
+                </button>
+
+                <button onclick="switchPage('page-alarm')" class="w-full flex items-center p-4 bg-white border border-slate-200 rounded-2xl hover:bg-amber-50 transition-all shadow-sm group">
+                    <div class="w-12 h-12 rounded-full bg-amber-100 flex justify-center items-center text-amber-600 group-hover:bg-amber-500 group-hover:text-white transition-colors">
+                        <i class="fa-solid fa-bell text-xl"></i>
+                    </div>
+                    <div class="ml-4 text-left">
+                        <h2 data-i18n="btnAlarm" class="font-bold text-lg">鬧鐘提醒</h2>
+                        <p data-i18n="descAlarm" class="text-xs text-slate-500 mt-1">查看與管理您嘅服藥鬧鐘</p>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- ================= 頁面 2：醫療 Passport 填寫表單 ================= -->
+        <div id="page-passport-form" class="page flex-col h-full bg-slate-50">
+            <div class="bg-blue-700 p-5 text-white flex items-center shadow-md">
+                <button onclick="switchPage('page-home')" class="w-8 h-8 flex justify-center items-center rounded-full bg-white/20">
+                    <i class="fa-solid fa-chevron-left text-sm"></i>
+                </button>
+                <h1 data-i18n="formHeader" class="text-xl font-bold ml-4">建立醫療 Passport</h1>
+            </div>
+            <div class="p-6 flex-1 overflow-y-auto no-scrollbar">
+                <form onsubmit="handlePassportSubmit(event)" class="space-y-4">
+                    <div>
+                        <label data-i18n="labelName" class="text-sm font-bold text-slate-600">姓名 Full Name *</label>
+                        <input type="text" id="input-name" data-i18n-placeholder="placeholderName" class="w-full mt-1 p-3 bg-white border border-slate-200 rounded-xl outline-none" placeholder="請輸入全名" required>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label data-i18n="labelBlood" class="text-sm font-bold text-slate-600">血型 Blood Type</label>
+                            <select id="input-blood" class="w-full mt-1 p-3 bg-white border border-slate-200 rounded-xl outline-none">
+                                <option value="O">O</option>
+                                <option value="A">A</option>
+                                <option value="B">B</option>
+                                <option value="AB">AB</option>
+                                <option value="Rh">Rh</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label data-i18n="labelContact" class="text-sm font-bold text-slate-600">緊急聯絡人</label>
+                            <input type="tel" id="input-contact" data-i18n-placeholder="placeholderContact" class="w-full mt-1 p-3 bg-white border border-slate-200 rounded-xl outline-none" placeholder="聯絡人號碼">
+                        </div>
+                    </div>
+                    <div>
+                        <label data-i18n="labelHistory" class="text-sm font-bold text-slate-600">病史 Medical History</label>
+                        <textarea id="input-history" data-i18n-placeholder="placeholderHistory" class="w-full mt-1 p-3 bg-white border border-slate-200 rounded-xl outline-none resize-none h-20" placeholder="例如：高血壓"></textarea>
+                    </div>
+                    <div>
+                        <label data-i18n="labelAllergy" class="text-sm font-bold text-slate-600">藥物過敏 Allergies</label>
+                        <input type="text" id="input-allergy" data-i18n-placeholder="placeholderAllergy" class="w-full mt-1 p-3 bg-white border border-slate-200 rounded-xl outline-none" placeholder="例如：盤尼西林">
+                    </div>
+                    <div>
+                        <label data-i18n="labelMeds" class="text-sm font-bold text-slate-600">常服用藥物</label>
+                        <input type="text" id="input-meds" data-i18n-placeholder="placeholderMeds" class="w-full mt-1 p-3 bg-white border border-slate-200 rounded-xl outline-none" placeholder="例如：阿斯匹靈">
+                    </div>
+                    <button type="submit" data-i18n="submitBtn" class="w-full mt-4 bg-blue-600 text-white font-bold py-4 rounded-xl shadow-md">
+                        生成專屬 Passport
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ================= 頁面 3：數位醫療護照卡片 ================= -->
+        <div id="page-passport-card" class="page flex-col h-full bg-slate-100 overflow-y-auto p-4">
+            <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200 mb-4">
+                <div class="bg-blue-700 p-6 text-center text-white">
+                    <div class="w-16 h-16 mx-auto bg-white rounded-full flex justify-center items-center mb-3 text-blue-700 shadow">
+                        <i class="fa-solid fa-user-shield text-3xl"></i>
+                    </div>
+                    <h1 data-i18n="cardHeader" class="text-2xl font-bold">醫療 Passport</h1>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="flex justify-between border-b pb-3">
+                        <div>
+                            <p data-i18n="cardNameTitle" class="text-xs text-slate-400 font-bold">姓名</p>
+                            <p id="card-name" class="text-lg font-bold">陳大文</p>
+                        </div>
+                        <div class="text-right">
+                            <p data-i18n="cardBloodTitle" class="text-xs text-slate-400 font-bold">血型</p>
+                            <span id="card-blood" class="bg-red-100 text-red-600 font-bold px-3 py-1 rounded-lg">O</span>
+                        </div>
+                    </div>
+                    <div class="bg-orange-50 p-3 rounded-xl border border-orange-100">
+                        <p data-i18n="cardContactTitle" class="text-xs text-orange-600 font-bold">緊急聯絡人</p>
+                        <p id="card-contact" class="font-bold text-slate-800">+853 6666 8888</p>
+                    </div>
+                    <div>
+                        <p data-i18n="cardHistoryTitle" class="text-xs text-slate-400 font-bold">病史</p>
+                        <p id="card-history" class="bg-slate-50 p-2 rounded-lg text-sm">高血壓</p>
+                    </div>
+                    <div>
+                        <p data-i18n="cardAllergyTitle" class="text-xs text-red-500 font-bold">藥物過敏</p>
+                        <p id="card-allergy" class="bg-red-50 text-red-700 p-2 rounded-lg text-sm font-medium">盤尼西林</p>
+                    </div>
+                    <div>
+                        <p data-i18n="cardMedsTitle" class="text-xs text-slate-400 font-bold">常服用藥物</p>
+                        <p id="card-meds" class="bg-slate-50 p-2 rounded-lg text-sm">阿斯匹靈</p>
+                    </div>
+
+                    <div class="pt-2 border-t">
+                        <button onclick="generateShareLink()" class="w-full bg-indigo-600 text-white font-bold py-2.5 rounded-xl text-sm shadow flex justify-center items-center gap-2">
+                            <i class="fa-solid fa-link"></i> 生成純資料分享連結
+                        </button>
+                        <div id="share-link-box" class="hidden mt-3 p-3 bg-slate-50 rounded-xl border text-xs break-all text-slate-600">
+                            <p class="font-bold text-indigo-600 mb-1">已生成專屬連結：</p>
+                            <input type="text" id="share-link-input" readonly class="w-full bg-white p-2 border rounded text-slate-500 select-all outline-none" onclick="this.select()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex gap-3 pb-4">
+                <button onclick="exportToGoogleSheet()" id="exportBtn" data-i18n="btnExport" class="flex-1 bg-emerald-600 text-white font-bold py-3 rounded-xl shadow">匯出紀錄</button>
+                <button onclick="switchPage('page-home')" data-i18n="btnHome" class="flex-1 bg-white text-slate-700 font-bold py-3 rounded-xl border shadow">返回主頁</button>
+            </div>
+        </div>
+
+        <!-- ================= 頁面 4：純資料檢視頁 (Public View) ================= -->
+        <div id="page-public-view" class="page flex-col h-full bg-slate-100 overflow-y-auto p-4">
+            <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200 my-auto">
+                <div class="bg-indigo-700 p-6 text-center text-white">
+                    <div class="w-16 h-16 mx-auto bg-white rounded-full flex justify-center items-center mb-3 text-indigo-700 shadow">
+                        <i class="fa-solid fa-id-card-clip text-3xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold">緊急醫療資料</h1>
+                    <p class="text-indigo-200 text-xs mt-1">此頁面僅顯示個人健康檔案</p>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="flex justify-between border-b pb-3">
+                        <div>
+                            <p class="text-xs text-slate-400 font-bold">姓名</p>
+                            <p id="pub-name" class="text-lg font-bold">--</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xs text-slate-400 font-bold">血型</p>
+                            <span id="pub-blood" class="bg-red-100 text-red-600 font-bold px-3 py-1 rounded-lg">--</span>
+                        </div>
+                    </div>
+                    <div class="bg-orange-50 p-3 rounded-xl border border-orange-100">
+                        <p class="text-xs text-orange-600 font-bold">緊急聯絡人</p>
+                        <p id="pub-contact" class="font-bold text-slate-800">--</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400 font-bold">病史</p>
+                        <p id="pub-history" class="bg-slate-50 p-2 rounded-lg text-sm">--</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-red-500 font-bold">藥物過敏</p>
+                        <p id="pub-allergy" class="bg-red-50 text-red-700 p-2 rounded-lg text-sm font-medium">--</p>
+                    </div>
+                    <div>
+                        <p class="text-xs text-slate-400 font-bold">常服用藥物</p>
+                        <p id="pub-meds" class="bg-slate-50 p-2 rounded-lg text-sm">--</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 頁面 5：AI 掃描藥物（真實鏡頭 + 智能模擬辨識） ================= -->
+        <div id="page-scan" class="page flex-col h-full bg-slate-900 text-white relative">
+            <div class="p-5 flex justify-between items-center z-10">
+                <button onclick="stopCamera(); switchPage('page-home');" class="w-10 h-10 flex justify-center items-center rounded-full bg-black/40">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <h1 data-i18n="scanHeader" class="text-lg font-bold">掃描藥物包裝</h1>
+                <div class="w-10"></div>
+            </div>
+
+            <!-- 真實鏡頭預覽畫面 -->
+            <div class="absolute inset-0 flex justify-center items-center overflow-hidden bg-black">
+                <video id="cameraStream" autoplay playsinline class="w-full h-full object-cover"></video>
+                <canvas id="captureCanvas" class="hidden"></canvas>
+            </div>
+
+            <div class="flex-1 flex justify-center items-center relative pointer-events-none">
+                <div class="w-64 h-64 border-4 border-emerald-500 rounded-2xl relative flex justify-center items-center shadow-[0_0_30px_rgba(16,185,129,0.3)]">
+                    <p data-i18n="scanTip" class="absolute -bottom-10 text-sm text-slate-200 bg-black/60 px-3 py-1 rounded-full backdrop-blur-sm">將藥名對準框內</p>
+                </div>
+            </div>
+
+            <div class="p-8 bg-gradient-to-t from-black/80 to-transparent flex justify-center z-10">
+                <button onclick="captureAndScan()" class="w-20 h-20 rounded-full border-4 border-emerald-500 bg-emerald-500/20 flex justify-center items-center active:scale-95 transition-transform">
+                    <div id="scanBtnIcon" class="w-14 h-14 bg-emerald-500 rounded-full flex justify-center items-center text-2xl text-white shadow-lg">
+                        <i class="fa-solid fa-camera"></i>
+                    </div>
+                </button>
+            </div>
+
+            <!-- 辨識結果彈窗 -->
+            <div id="scanResultModal" class="absolute bottom-0 w-full bg-white text-slate-800 rounded-t-3xl p-6 transform translate-y-full transition-transform duration-300 z-30 shadow-2xl">
+                <div id="modal-success-content">
+                    <h2 class="text-xl font-bold text-emerald-600 mb-1"><i class="fa-solid fa-check-circle"></i> AI 辨識成功</h2>
+                    <p id="detected-med-name" class="text-2xl font-bold">Mefen (每日 3 次)</p>
+                    <p class="text-sm text-slate-500 mb-4">已自動為您設定早、中、晚用藥鬧鐘！</p>
+                    <button onclick="confirmAndAddAlarms()" class="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-md">確認並查看鬧鐘</button>
+                </div>
+                <div id="modal-fail-content" class="hidden">
+                    <h2 class="text-xl font-bold text-red-600 mb-1"><i class="fa-solid fa-triangle-exclamation"></i> 未能辨識</h2>
+                    <p class="text-lg font-bold text-slate-700 mb-4">沒有藥物包裝</p>
+                    <button onclick="closeScanResult()" class="w-full bg-slate-600 text-white font-bold py-3 rounded-xl shadow-md">重新掃描</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================= 頁面 6：鬧鐘管理 ================= -->
+        <div id="page-alarm" class="page flex-col h-full bg-slate-100">
+            <div class="bg-blue-700 text-white p-5 flex justify-between items-center shadow">
+                <button onclick="switchPage('page-home')" class="w-8 h-8 flex justify-center items-center rounded-full bg-white/20">
+                    <i class="fa-solid fa-chevron-left text-sm"></i>
+                </button>
+                <h1 data-i18n="alarmHeader" class="text-xl font-bold">用藥提醒</h1>
+                <div class="w-8"></div>
+            </div>
+            <!-- 鬧鐘列表容器 -->
+            <div id="alarm-list-container" class="flex-1 overflow-y-auto p-4 space-y-4">
+                <!-- 預設鬧鐘 -->
+                <div class="bg-white p-4 rounded-2xl shadow-sm border flex justify-between items-center relative overflow-hidden">
+                    <div class="absolute left-0 top-0 bottom-0 w-2 bg-emerald-500"></div>
+                    <div class="pl-2">
+                        <h2 class="text-3xl font-bold">08:00 <span class="text-xs text-slate-400">AM</span></h2>
+                        <p class="font-bold text-slate-700 mt-1">阿莫西林 (預設)</p>
+                        <span class="inline-block bg-blue-50 text-blue-600 text-xs px-2 py-0.5 rounded mt-1">每日服藥</span>
+                    </div>
+                    <input type="checkbox" class="w-5 h-5 accent-emerald-500" checked>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JavaScript 邏輯 -->
+    <script>
+        let currentLang = 'zh-HK';
+        let mediaStream = null;
+        let lastDetectedMed = "Mefen"; // 預設成功辨識出類似相片中的藥物
+
+        const translations = {
+            'zh-HK': {
+                homeTitle: '智慧藥盒管理',
+                homeSub: '守護您嘅健康與用藥安全',
+                btnPassport: '醫療 Passport',
+                descPassport: '填寫資料、血型與緊急聯絡人',
+                btnScan: '掃描藥物',
+                descScan: 'AI 辨識藥物並設定服藥時間',
+                btnAlarm: '鬧鐘提醒',
+                descAlarm: '查看與管理您嘅服藥鬧鐘',
+                formHeader: '建立醫療 Passport',
+                labelName: '姓名 Full Name *',
+                labelBlood: '血型 Blood Type',
+                labelContact: '緊急聯絡人',
+                labelHistory: '病史 Medical History',
+                labelAllergy: '藥物過敏 Allergies',
+                labelMeds: '常服用藥物',
+                submitBtn: '生成專屬 Passport',
+                placeholderName: '請輸入全名',
+                placeholderContact: '聯絡人號碼',
+                placeholderHistory: '例如：高血壓',
+                placeholderAllergy: '例如：盤尼西林',
+                placeholderMeds: '例如：阿斯匹靈',
+                cardHeader: '醫療 Passport',
+                cardNameTitle: '姓名',
+                cardBloodTitle: '血型',
+                cardContactTitle: '緊急聯絡人',
+                cardHistoryTitle: '病史',
+                cardAllergyTitle: '藥物過敏',
+                cardMedsTitle: '常服用藥物',
+                btnExport: '匯出紀錄',
+                btnHome: '返回主頁',
+                scanHeader: '掃描藥物包裝',
+                scanTip: '將藥名對準框內',
+                alarmHeader: '用藥提醒'
+            },
+            'zh-CN': {
+                homeTitle: '智慧药盒管理',
+                homeSub: '守护您的健康与用药安全',
+                btnPassport: '医疗 Passport',
+                descPassport: '填写资料、血型与紧急联系人',
+                btnScan: '扫描药物',
+                descScan: 'AI 识别药物并设定服药时间',
+                btnAlarm: '闹钟提醒',
+                descAlarm: '查看与管理您的服药闹钟',
+                formHeader: '建立医疗 Passport',
+                labelName: '姓名 Full Name *',
+                labelBlood: '血型 Blood Type',
+                labelContact: '紧急联系人',
+                labelHistory: '病史 Medical History',
+                labelAllergy: '药物过敏 Allergies',
+                labelMeds: '常服用药物',
+                submitBtn: '生成专属 Passport',
+                placeholderName: '请输入全名',
+                placeholderContact: '联系人号码',
+                placeholderHistory: '例如：高血压',
+                placeholderAllergy: '例如：青霉素',
+                placeholderMeds: '例如：阿司匹林',
+                cardHeader: '医疗 Passport',
+                cardNameTitle: '姓名',
+                cardBloodTitle: '血型',
+                cardContactTitle: '紧急联系人',
+                cardHistoryTitle: '病史',
+                cardAllergyTitle: '药物过敏',
+                cardMedsTitle: '常服用药物',
+                btnExport: '导出记录',
+                btnHome: '返回主页',
+                scanHeader: '扫描药物包装',
+                scanTip: '将药名对准框内',
+                alarmHeader: '用药提醒'
+            },
+            'en': {
+                homeTitle: 'Smart Pillbox',
+                homeSub: 'Protecting your health & medication safety',
+                btnPassport: 'Medical Passport',
+                descPassport: 'Fill in info, blood type & emergency contacts',
+                btnScan: 'Scan Medicine',
+                descScan: 'AI recognition and schedule setting',
+                btnAlarm: 'Reminders',
+                descAlarm: 'View and manage your medication alarms',
+                formHeader: 'Create Medical Passport',
+                labelName: 'Full Name *',
+                labelBlood: 'Blood Type',
+                labelContact: 'Emergency Contact',
+                labelHistory: 'Medical History',
+                labelAllergy: 'Allergies',
+                labelMeds: 'Regular Medications',
+                submitBtn: 'Generate Passport',
+                placeholderName: 'Enter full name',
+                placeholderContact: 'Contact number',
+                placeholderHistory: 'e.g., Hypertension',
+                placeholderAllergy: 'e.g., Penicillin',
+                placeholderMeds: 'e.g., Aspirin',
+                cardHeader: 'Medical Passport',
+                cardNameTitle: 'Name',
+                cardBloodTitle: 'Blood Type',
+                cardContactTitle: 'Emergency Contact',
+                cardHistoryTitle: 'History',
+                cardAllergyTitle: 'Allergies',
+                cardMedsTitle: 'Medications',
+                btnExport: 'Export Records',
+                btnHome: 'Back to Home',
+                scanHeader: 'Scan Medicine',
+                scanTip: 'Align medicine name in frame',
+                alarmHeader: 'Reminders'
+            },
+            'ja': {
+                homeTitle: 'スマートピルボックス',
+                homeSub: '健康と服薬の安全を守る',
+                btnPassport: '医療パスポート',
+                descPassport: '情報、血液型、緊急連絡先の入力',
+                btnScan: '薬をスキャン',
+                descScan: 'AI認識と服薬スケジュールの設定',
+                btnAlarm: '服薬アラーム',
+                descAlarm: '服薬アラームの確認と管理',
+                formHeader: '医療パスポート作成',
+                labelName: '氏名 Full Name *',
+                labelBlood: '血液型 Blood Type',
+                labelContact: '緊急連絡先',
+                labelHistory: '既往歴 Medical History',
+                labelAllergy: 'アレルギー Allergies',
+                labelMeds: '常用薬',
+                submitBtn: 'パスポートを生成',
+                placeholderName: '氏名を入力',
+                placeholderContact: '連絡先番号',
+                placeholderHistory: '例：高血圧',
+                placeholderAllergy: '例：ペニシリン',
+                placeholderMeds: '例：アスピリン',
+                cardHeader: '医療パスポート',
+                cardNameTitle: '氏名',
+                cardBloodTitle: '血液型',
+                cardContactTitle: '緊急連絡先',
+                cardHistoryTitle: '既往歴',
+                cardAllergyTitle: 'アレルギー',
+                cardMedsTitle: '常用薬',
+                btnExport: '記録をエクスポート',
+                btnHome: 'ホームに戻る',
+                scanHeader: '薬をスキャン',
+                scanTip: '枠内に薬名を合わせてください',
+                alarmHeader: '服薬アラーム'
+            },
+            'ko': {
+                homeTitle: '스마트 약통 관리',
+                homeSub: '건강과 복약 안전을 지켜드립니다',
+                btnPassport: '의료 여권',
+                descPassport: '정보, 혈액형 및 비상연락처 입력',
+                btnScan: '약품 스캔',
+                descScan: 'AI 인식 및 복약 시간 설정',
+                btnAlarm: '복약 알림',
+                descAlarm: '복약 알림 확인 및 관리',
+                formHeader: '의료 여권 만들기',
+                labelName: '이름 Full Name *',
+                labelBlood: '혈액형 Blood Type',
+                labelContact: '비상 연락처',
+                labelHistory: '병력 Medical History',
+                labelAllergy: '알레르기 Allergies',
+                labelMeds: '복용 중인 약',
+                submitBtn: '여권 생성하기',
+                placeholderName: '성함 입력',
+                placeholderContact: '연락처 번호',
+                placeholderHistory: '예: 고혈압',
+                placeholderAllergy: '예: 페니실린',
+                placeholderMeds: '예: 아스피린',
+                cardHeader: '의료 여권',
+                cardNameTitle: '이름',
+                cardBloodTitle: '혈액형',
+                cardContactTitle: '비상 연락처',
+                cardHistoryTitle: '병력',
+                cardAllergyTitle: '알레르기',
+                cardMedsTitle: '복용 약물',
+                btnExport: '기록 내보내기',
+                btnHome: '홈으로',
+                scanHeader: '약품 스캔',
+                scanTip: '약 이름을 네모 안에 맞춰주세요',
+                alarmHeader: '복약 알림'
+            },
+            'pt': {
+                homeTitle: 'Caixa de Remédios',
+                homeSub: 'Protegendo sua saúde e segurança',
+                btnPassport: 'Passaporte Médico',
+                descPassport: 'Preencha dados, tipo sanguíneo e contatos',
+                btnScan: 'Escanear Medicamento',
+                descScan: 'Reconhecimento de IA e agendamento',
+                btnAlarm: 'Lembretes',
+                descAlarm: 'Visualize e gerencie seus alarmes',
+                formHeader: 'Criar Passaporte Médico',
+                labelName: 'Nome Completo *',
+                labelBlood: 'Tipo Sanguíneo',
+                labelContact: 'Contato de Emergência',
+                labelHistory: 'Histórico Médico',
+                labelAllergy: 'Alergias',
+                labelMeds: 'Medicamentos Regulares',
+                submitBtn: 'Gerar Passaporte',
+                placeholderName: 'Digite o nome completo',
+                placeholderContact: 'Número de contato',
+                placeholderHistory: 'Ex: Hipertensão',
+                placeholderAllergy: 'Ex: Penicilina',
+                placeholderMeds: 'Ex: Aspirina',
+                cardHeader: 'Passaporte Médico',
+                cardNameTitle: 'Nome',
+                cardBloodTitle: 'Tipo Sanguíneo',
+                cardContactTitle: 'Contato de Emergência',
+                cardHistoryTitle: 'Histórico',
+                cardAllergyTitle: 'Alergias',
+                cardMedsTitle: 'Medicamentos',
+                btnExport: 'Exportar Registros',
+                btnHome: 'Voltar ao Início',
+                scanHeader: 'Escanear Medicamento',
+                scanTip: 'Alinhe o nome no quadro',
+                alarmHeader: 'Lembretes'
+            },
+            'es': {
+                homeTitle: 'Pastillero Inteligente',
+                homeSub: 'Protegiendo tu salud y seguridad',
+                btnPassport: 'Pasaporte Médico',
+                descPassport: 'Ingresa datos, tipo de sangre y contactos',
+                btnScan: 'Escanear Medicamento',
+                descScan: 'Reconocimiento de IA y configuración',
+                btnAlarm: 'Recordatorios',
+                descAlarm: 'Ver y gestionar tus alarmas',
+                formHeader: 'Crear Pasaporte Médico',
+                labelName: 'Nombre Completo *',
+                labelBlood: 'Tipo de Sangre',
+                labelContact: 'Contacto de Emergencia',
+                labelHistory: 'Historial Médico',
+                labelAllergy: 'Alergias',
+                labelMeds: 'Medicamentos Regulares',
+                submitBtn: 'Generar Pasaporte',
+                placeholderName: 'Ingresa tu nombre completo',
+                placeholderContact: 'Número de contacto',
+                placeholderHistory: 'Ej: Hipertensión',
+                placeholderAllergy: 'Ej: Penicilina',
+                placeholderMeds: 'Ej: Aspirina',
+                cardHeader: 'Pasaporte Médico',
+                cardNameTitle: 'Nombre',
+                cardBloodTitle: 'Tipo de Sangre',
+                cardContactTitle: 'Contacto de Emergencia',
+                cardHistoryTitle: 'Historial',
+                cardAllergyTitle: 'Alergias',
+                cardMedsTitle: 'Medicamentos',
+                btnExport: 'Exportar Registros',
+                btnHome: 'Volver al Inicio',
+                scanHeader: 'Escanear Medicamento',
+                scanTip: 'Alinea el marco en el nombre',
+                alarmHeader: 'Recordatorios'
+            }
+        };
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('view') && urlParams.get('view') === 'public') {
+                document.getElementById('pub-name').innerText = urlParams.get('name') || '未填寫';
+                document.getElementById('pub-blood').innerText = urlParams.get('blood') || 'O';
+                document.getElementById('pub-contact').innerText = urlParams.get('contact') || '未填寫';
+                document.getElementById('pub-history').innerText = urlParams.get('history') || '無';
+                document.getElementById('pub-allergy').innerText = urlParams.get('allergy') || '無';
+                document.getElementById('pub-meds').innerText = urlParams.get('meds') || '無';
+                
+                switchPage('page-public-view');
+            }
+        });
+
+        function changeLanguage(lang) {
+            currentLang = lang;
+            const texts = translations[lang];
+            if (!texts) return;
+
+            document.getElementById('langSelect').value = lang;
+
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (texts[key]) {
+                    el.innerText = texts[key];
+                }
+            });
+
+            document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+                const key = el.getAttribute('data-i18n-placeholder');
+                if (texts[key]) {
+                    el.placeholder = texts[key];
+                }
+            });
+        }
+
+        function switchPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            if(pageId !== 'page-public-view') {
+                changeLanguage(currentLang);
+            }
+        }
+
+        function startCamera() {
+            const video = document.getElementById('cameraStream');
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                .then(stream => {
+                    mediaStream = stream;
+                    video.srcObject = stream;
+                })
+                .catch(err => {
+                    console.error('無法存取相機: ', err);
+                });
+        }
+
+        function stopCamera() {
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+        }
+
+        // 拍照與模擬智能辨識邏輯
+        function captureAndScan() {
+            const icon = document.getElementById('scanBtnIcon').querySelector('i');
+            icon.className = 'fa-solid fa-spinner fa-spin';
+
+            setTimeout(() => {
+                icon.className = 'fa-solid fa-camera';
+                
+                // 模擬隨機或根據條件判定：如果成功偵測到藥袋
+                // 為了展示效果，預設模擬成功偵測到 "Mefen" 藥袋
+                const isPackageDetected = true; 
+
+                const successContent = document.getElementById('modal-success-content');
+                const failContent = document.getElementById('modal-fail-content');
+                
+                if (isPackageDetected) {
+                    successContent.classList.remove('hidden');
+                    failContent.classList.add('hidden');
+                    document.getElementById('detected-med-name').innerText = `${lastDetectedMed} (每日 3 次)`;
+                } else {
+                    successContent.classList.add('hidden');
+                    failContent.classList.remove('hidden');
+                }
+
+                document.getElementById('scanResultModal').classList.remove('translate-y-full');
+            }, 1000);
+        }
+
+        // 確認並自動在鬧鐘頁面加入早、中、晚三個鬧鐘
+        function confirmAndAddAlarms() {
+            stopCamera();
+            document.getElementById('scanResultModal').classList.add('translate-y-full');
+
+            // 動態加入早、中、晚鬧鐘
+            const alarmContainer = document.getElementById('alarm-list-container');
+            alarmContainer.innerHTML = `
+                <div class="bg-white p-4 rounded-2xl shadow-sm border flex justify-between items-center relative overflow-hidden">
+                    <div class="absolute left-0 top-0 bottom-0 w-2 bg-emerald-500"></div>
+                    <div class="pl-2">
+                        <h2 class="text-3xl font-bold">08:00 <span class="text-xs text-slate-400">AM</span></h2>
+                        <p class="font-bold text-slate-700 mt-1">${lastDetectedMed} (早)</p>
+                        <span class="inline-block bg-emerald-50 text-emerald-600 text-xs px-2 py-0.5 rounded mt-1">飯後服用</span>
+                    </div>
+                    <input type="checkbox" class="w-5 h-5 accent-emerald-500" checked>
+                </div>
+                <div class="bg-white p-4 rounded-2xl shadow-sm border flex justify-between items-center relative overflow-hidden">
+                    <div class="absolute left-0 top-0 bottom-0 w-2 bg-emerald-500"></div>
+                    <div class="pl-2">
+                        <h2 class="text-3xl font-bold">13:00 <span class="text-xs text-slate-400">PM</span></h2>
+                        <p class="font-bold text-slate-700 mt-1">${lastDetectedMed} (中)</p>
+                        <span class="inline-block bg-emerald-50 text-emerald-600 text-xs px-2 py-0.5 rounded mt-1">飯後服用</span>
+                    </div>
+                    <input type="checkbox" class="w-5 h-5 accent-emerald-500" checked>
+                </div>
+                <div class="bg-white p-4 rounded-2xl shadow-sm border flex justify-between items-center relative overflow-hidden">
+                    <div class="absolute left-0 top-0 bottom-0 w-2 bg-emerald-500"></div>
+                    <div class="pl-2">
+                        <h2 class="text-3xl font-bold">19:00 <span class="text-xs text-slate-400">PM</span></h2>
+                        <p class="font-bold text-slate-700 mt-1">${lastDetectedMed} (晚)</p>
+                        <span class="inline-block bg-emerald-50 text-emerald-600 text-xs px-2 py-0.5 rounded mt-1">飯後服用</span>
+                    </div>
+                    <input type="checkbox" class="w-5 h-5 accent-emerald-500" checked>
+                </div>
+            `;
+
+            switchPage('page-alarm');
+        }
+
+        function closeScanResult() {
+            document.getElementById('scanResultModal').classList.add('translate-y-full');
+        }
+
+        function handlePassportSubmit(event) {
+            event.preventDefault();
+            document.getElementById('card-name').innerText = document.getElementById('input-name').value || '陳大文';
+            document.getElementById('card-blood').innerText = document.getElementById('input-blood').value;
+            document.getElementById('card-contact').innerText = document.getElementById('input-contact').value || '+853 6666 8888';
+            document.getElementById('card-history').innerText = document.getElementById('input-history').value || '無';
+            document.getElementById('card-allergy').innerText = document.getElementById('input-allergy').value || '無';
+            document.getElementById('card-meds').innerText = document.getElementById('input-meds').value || '無';
+            
+            document.getElementById('share-link-box').classList.add('hidden');
+            switchPage('page-passport-card');
+        }
+
+        function generateShareLink() {
+            const name = encodeURIComponent(document.getElementById('card-name').innerText);
+            const blood = encodeURIComponent(document.getElementById('card-blood').innerText);
+            const contact = encodeURIComponent(document.getElementById('card-contact').innerText);
+            const history = encodeURIComponent(document.getElementById('card-history').innerText);
+            const allergy = encodeURIComponent(document.getElementById('card-allergy').innerText);
+            const meds = encodeURIComponent(document.getElementById('card-meds').innerText);
+
+            const baseUrl = window.location.origin + window.location.pathname;
+            const shareUrl = `${baseUrl}?view=public&name=${name}&blood=${blood}&contact=${contact}&history=${history}&allergy=${allergy}&meds=${meds}`;
+
+            const linkBox = document.getElementById('share-link-box');
+            const linkInput = document.getElementById('share-link-input');
+            
+            linkInput.value = shareUrl;
+            linkBox.classList.remove('hidden');
+        }
+
+        function exportToGoogleSheet() {
+            const scriptURL = 'https://script.google.com/macros/s/AKfycbwDfVYy95lYUq2sF6Nw2VQxBvtYDGURPeAKboFI_YgXqBJ6xOwmhktQSTd-IN_u63dN/exec';
+            
+            if (scriptURL === 'YOUR_GOOGLE_APPS_SCRIPT_URL') {
+                alert('請先設定你的 Google Apps Script 網址！');
+                return;
+            }
+
+            const btn = document.getElementById('exportBtn');
+            btn.innerText = '匯出中...';
+            btn.disabled = true;
+
+            const formData = {
+                name: document.getElementById('card-name').innerText,
+                blood: document.getElementById('card-blood').innerText,
+                contact: document.getElementById('card-contact').innerText,
+                history: document.getElementById('card-history').innerText,
+                allergy: document.getElementById('card-allergy').innerText,
+                meds: document.getElementById('card-meds').innerText
+            };
+
+            fetch(scriptURL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(formData)
+            })
+            .then(() => {
+                alert('成功匯出紀錄到 Google Sheet！');
+                btn.innerText = translations[currentLang]['btnExport'] || '匯出紀錄';
+                btn.disabled = false;
+            })
+            .catch(error => {
+                console.error('Error!', error.message);
+                alert('匯出失敗，請檢查網絡或設定。');
+                btn.innerText = translations[currentLang]['btnExport'] || '匯出紀錄';
+                btn.disabled = false;
+            });
+        }
+    </script>
+</body>
+</html>

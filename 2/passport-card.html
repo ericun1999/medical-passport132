@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>數位醫療 Passport</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 p-4 flex justify-center items-center">
+
+    <div class="w-full max-w-md">
+        
+        <!-- 醫療卡片主體 -->
+        <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200">
+            
+            <!-- 卡片頂部設計 -->
+            <div class="bg-blue-700 p-6 text-center relative overflow-hidden">
+                <!-- 裝飾性背景圖案 -->
+                <i class="fa-solid fa-heart-pulse absolute -right-4 -bottom-4 text-7xl text-white/10"></i>
+                
+                <div class="w-16 h-16 mx-auto bg-white rounded-full flex justify-center items-center mb-3 shadow-md">
+                    <i class="fa-solid fa-user-shield text-3xl text-blue-700"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-white tracking-wider">醫療 Passport</h1>
+                <p class="text-blue-100 text-sm mt-1">NFC 認證安全資料</p>
+            </div>
+
+            <!-- 病患資料區塊 -->
+            <div class="p-6 space-y-5">
+                
+                <!-- 基本資料 -->
+                <div class="flex justify-between items-end border-b border-slate-100 pb-3">
+                    <div>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">姓名 Name</p>
+                        <p class="text-xl font-bold text-slate-800">陳大文 (Chan Tai Man)</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1">血型</p>
+                        <span class="inline-block bg-red-100 text-red-600 font-bold px-3 py-1 rounded-lg">O 型</span>
+                    </div>
+                </div>
+
+                <!-- 緊急聯絡 (顯眼標示) -->
+                <div class="bg-orange-50 border border-orange-100 rounded-xl p-4 flex items-center">
+                    <div class="w-10 h-10 rounded-full bg-orange-100 text-orange-600 flex justify-center items-center mr-4">
+                        <i class="fa-solid fa-phone-volume"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-orange-600 font-bold mb-1">緊急聯絡人 Emergency Contact</p>
+                        <p class="font-bold text-slate-800">+853 6666 8888 (陳太太)</p>
+                    </div>
+                </div>
+
+                <!-- 醫療資訊清單 -->
+                <div class="space-y-4">
+                    <div>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1"><i class="fa-solid fa-notes-medical mr-1"></i> 病史 Medical History</p>
+                        <p class="text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-100">高血壓 (Hypertension)、第二型糖尿病</p>
+                    </div>
+
+                    <!-- 藥物過敏 (危險警示色) -->
+                    <div>
+                        <p class="text-xs text-red-500 font-bold uppercase tracking-wider mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i> 藥物過敏 Allergies</p>
+                        <p class="text-red-700 bg-red-50 p-3 rounded-lg border border-red-100 font-medium">盤尼西林 (Penicillin)</p>
+                    </div>
+
+                    <div>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-wider mb-1"><i class="fa-solid fa-pills mr-1"></i> 常服用藥物 Medications</p>
+                        <p class="text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-100">阿斯匹靈 (每日一次)、降血壓藥</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 匯出與管理功能區 -->
+        <div class="mt-6 flex gap-3">
+            <!-- 匯出 Excel 按鈕 -->
+            <button class="flex-1 bg-emerald-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-emerald-700 transition-colors shadow-sm flex justify-center items-center gap-2">
+                <i class="fa-solid fa-file-excel"></i>
+                <span>匯出紀錄</span>
+            </button>
+            
+            <!-- 返回主頁 / 重新讀取按鈕 -->
+            <button class="flex-1 bg-white text-slate-700 font-bold py-3 px-4 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm flex justify-center items-center gap-2">
+                <i class="fa-solid fa-house"></i>
+                <span>返回主頁</span>
+            </button>
+        </div>
+
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 掃描藥物</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; }
+        
+        /* 掃描線動畫 */
+        @keyframes scan {
+            0% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+        .scan-line {
+            animation: scan 2.5s infinite linear;
+        }
+
+        /* 取景框四角裝飾 */
+        .scan-frame::before, .scan-frame::after, .scan-frame-inner::before, .scan-frame-inner::after {
+            content: ''; position: absolute; width: 30px; height: 30px; border-color: #10b981; border-style: solid;
+        }
+        .scan-frame::before { top: 0; left: 0; border-width: 4px 0 0 4px; border-top-left-radius: 10px; }
+        .scan-frame::after { top: 0; right: 0; border-width: 4px 4px 0 0; border-top-right-radius: 10px; }
+        .scan-frame-inner::before { bottom: 0; left: 0; border-width: 0 0 4px 4px; border-bottom-left-radius: 10px; }
+        .scan-frame-inner::after { bottom: 0; right: 0; border-width: 0 4px 4px 0; border-bottom-right-radius: 10px; }
+    </style>
+</head>
+<body class="bg-slate-900 min-h-screen text-slate-100 flex justify-center items-center">
+
+    <div class="w-full max-w-md h-[100dvh] md:h-[800px] bg-slate-800 md:rounded-3xl shadow-2xl relative overflow-hidden flex flex-col">
+        
+        <!-- 頂部導航 -->
+        <div class="p-5 flex justify-between items-center z-10 bg-gradient-to-b from-black/60 to-transparent">
+            <button class="w-10 h-10 flex justify-center items-center rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md transition-colors">
+                <i class="fa-solid fa-chevron-left text-white"></i>
+            </button>
+            <h1 class="text-lg font-bold tracking-wide">掃描藥物包裝</h1>
+            <button class="w-10 h-10 flex justify-center items-center rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md transition-colors text-emerald-400">
+                <i class="fa-solid fa-bolt"></i>
+            </button>
+        </div>
+
+        <!-- 模擬相機畫面區 -->
+        <div class="flex-1 relative flex justify-center items-center">
+            <!-- 模糊背景假裝係鏡頭畫面 -->
+            <div class="absolute inset-0 bg-slate-700 opacity-50 bg-[url('https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?q=80&w=600&auto=format&fit=crop')] bg-cover bg-center mix-blend-overlay"></div>
+            
+            <!-- 掃描取景框 -->
+            <div class="relative w-64 h-64 scan-frame">
+                <div class="absolute inset-0 scan-frame-inner"></div>
+                <!-- 掃描線 -->
+                <div id="scannerLine" class="absolute left-0 w-full h-1 bg-emerald-400 shadow-[0_0_15px_#10b981] scan-line"></div>
+                
+                <p class="absolute -bottom-10 left-0 w-full text-center text-sm text-slate-300 font-medium">請將藥物名稱與用法對準框內</p>
+            </div>
+        </div>
+
+        <!-- 底部按鈕區 (掃描前) -->
+        <div id="scanControls" class="p-8 pb-10 bg-slate-900 flex flex-col items-center z-10 rounded-t-3xl border-t border-slate-700">
+            <button onclick="startScan()" class="w-20 h-20 rounded-full border-4 border-emerald-500 bg-emerald-500/20 flex justify-center items-center mb-6 hover:bg-emerald-500/40 active:scale-95 transition-all">
+                <div class="w-14 h-14 bg-emerald-500 rounded-full flex justify-center items-center shadow-lg shadow-emerald-500/50">
+                    <i class="fa-solid fa-camera text-2xl text-white"></i>
+                </div>
+            </button>
+            <button class="text-slate-400 text-sm hover:text-white transition-colors">
+                <i class="fa-regular fa-image mr-2"></i> 從相簿上傳
+            </button>
+        </div>
+
+        <!-- AI 分析結果卡片 (掃描後彈出，預設隱藏) -->
+        <div id="resultCard" class="absolute bottom-0 w-full bg-white rounded-t-3xl shadow-[0_-10px_40px_rgba(0,0,0,0.3)] transform translate-y-full transition-transform duration-500 ease-out z-20 text-slate-800 flex flex-col max-h-[80vh]">
+            <div class="p-6">
+                <div class="w-12 h-1 bg-slate-200 rounded-full mx-auto mb-5"></div>
+                
+                <!-- 辨識結果 -->
+                <div class="flex items-start justify-between mb-6">
+                    <div>
+                        <p class="text-xs text-emerald-600 font-bold uppercase tracking-wide mb-1"><i class="fa-solid fa-check-circle mr-1"></i> AI 辨識成功</p>
+                        <h2 class="text-2xl font-bold">阿莫西林 (Amoxicillin)</h2>
+                        <p class="text-slate-500 text-sm mt-1">抗生素 / 500mg</p>
+                    </div>
+                </div>
+
+                <!-- 建議服藥時間 (AI 自動擷取) -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-100 mb-6">
+                    <p class="text-sm font-bold text-slate-700 mb-3"><i class="fa-regular fa-clock text-blue-500 mr-2"></i>建議服藥時間 (每日三次，飯後)</p>
+                    <div class="flex gap-2">
+                        <div class="flex-1 bg-white border border-blue-200 text-blue-700 font-medium py-2 rounded-lg text-center shadow-sm">
+                            08:00
+                        </div>
+                        <div class="flex-1 bg-white border border-blue-200 text-blue-700 font-medium py-2 rounded-lg text-center shadow-sm">
+                            13:00
+                        </div>
+                        <div class="flex-1 bg-white border border-blue-200 text-blue-700 font-medium py-2 rounded-lg text-center shadow-sm">
+                            19:00
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 智能藥盒連動設定 -->
+                <div class="flex items-center justify-between bg-blue-50 p-4 rounded-xl border border-blue-100 mb-6">
+                    <div class="flex items-center">
+                        <i class="fa-solid fa-box-open text-blue-600 text-xl mr-3"></i>
+                        <div>
+                            <p class="font-bold text-sm text-slate-800">指派至智慧藥盒</p>
+                            <p class="text-xs text-slate-500">建議放入：第一格 (藍燈)</p>
+                        </div>
+                    </div>
+                    <!-- Toggle Switch -->
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" value="" class="sr-only peer" checked>
+                        <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+
+                <button onclick="closeResult()" class="w-full bg-emerald-600 text-white font-bold text-lg py-4 rounded-xl hover:bg-emerald-700 active:scale-95 transition-all shadow-md flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-bell-concierge"></i>
+                    <span>確認並設定鬧鐘</span>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 模擬掃描與彈出結果嘅 JavaScript -->
+    <script>
+        function startScan() {
+            const btn = document.querySelector('#scanControls button');
+            const icon = btn.querySelector('i');
+            
+            // 變更按鈕狀態為讀取中
+            icon.className = 'fa-solid fa-spinner fa-spin text-2xl text-white';
+            
+            // 模擬 AI 辨識需要 2 秒鐘
+            setTimeout(() => {
+                // 彈出結果卡片
+                document.getElementById('resultCard').classList.remove('translate-y-full');
+                // 暫停掃描線動畫
+                document.getElementById('scannerLine').style.animationPlayState = 'paused';
+                // 恢復按鈕狀態
+                icon.className = 'fa-solid fa-camera text-2xl text-white';
+            }, 1500);
+        }
+
+        function closeResult() {
+            // 收起結果卡片
+            document.getElementById('resultCard').classList.add('translate-y-full');
+            // 恢復掃描線動畫
+            document.getElementById('scannerLine').style.animationPlayState = 'running';
+            alert('✅ 已成功將鬧鐘同步至智慧藥盒！');
+        }
+    </script>
+</body>
+</html>

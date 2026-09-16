@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鬧鐘與用藥提醒</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; }
+        
+        /* 隱藏捲軸但保持可捲動 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-200 min-h-screen text-slate-800 flex justify-center items-center">
+
+    <!-- 手機版面容器 -->
+    <div class="w-full max-w-md bg-slate-50 h-[100dvh] md:h-[800px] md:rounded-3xl shadow-2xl relative overflow-hidden flex flex-col">
+        
+        <!-- 頂部導航 (固定於頂部) -->
+        <div class="bg-blue-700 text-white p-5 flex justify-between items-center z-10 shadow-md">
+            <button class="w-10 h-10 flex justify-center items-center rounded-full bg-white/20 hover:bg-white/30 transition-colors">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+            <h1 class="text-xl font-bold tracking-wide">用藥提醒</h1>
+            <button class="w-10 h-10 flex justify-center items-center rounded-full bg-white/20 hover:bg-white/30 transition-colors">
+                <i class="fa-solid fa-ellipsis-vertical"></i>
+            </button>
+        </div>
+
+        <!-- 鬧鐘清單區塊 (可捲動) -->
+        <div class="flex-1 overflow-y-auto no-scrollbar p-4 pb-24 space-y-4">
+            
+            <!-- 鬧鐘卡片 1 (啟用狀態 - 早上) -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center relative overflow-hidden transition-all hover:shadow-md">
+                <!-- 左側顏色指示條 (代表啟用) -->
+                <div class="absolute left-0 top-0 bottom-0 w-2 bg-emerald-500"></div>
+                
+                <div class="pl-2">
+                    <div class="flex items-baseline gap-1 mb-1">
+                        <h2 class="text-4xl font-bold text-slate-800 tracking-tighter">08:00</h2>
+                        <span class="text-sm text-slate-500 font-medium">AM</span>
+                    </div>
+                    <p class="font-bold text-slate-700"><i class="fa-solid fa-capsules text-emerald-500 mr-1"></i> 阿莫西林 (Amoxicillin)</p>
+                    <div class="flex flex-wrap gap-2 mt-2 text-xs font-bold">
+                        <span class="bg-orange-50 text-orange-600 border border-orange-100 px-2 py-1 rounded-md">飯後服用</span>
+                        <span class="bg-blue-50 text-blue-600 border border-blue-100 px-2 py-1 rounded-md">藥盒第一格</span>
+                    </div>
+                </div>
+
+                <!-- Toggle Switch (開啟) -->
+                <label class="relative inline-flex items-center cursor-pointer ml-4">
+                    <input type="checkbox" value="" class="sr-only peer" checked>
+                    <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                </label>
+            </div>
+
+            <!-- 鬧鐘卡片 2 (啟用狀態 - 下午) -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center relative overflow-hidden transition-all hover:shadow-md">
+                <div class="absolute left-0 top-0 bottom-0 w-2 bg-emerald-500"></div>
+                <div class="pl-2">
+                    <div class="flex items-baseline gap-1 mb-1">
+                        <h2 class="text-4xl font-bold text-slate-800 tracking-tighter">13:00</h2>
+                        <span class="text-sm text-slate-500 font-medium">PM</span>
+                    </div>
+                    <p class="font-bold text-slate-700"><i class="fa-solid fa-capsules text-emerald-500 mr-1"></i> 阿莫西林 (Amoxicillin)</p>
+                    <div class="flex flex-wrap gap-2 mt-2 text-xs font-bold">
+                        <span class="bg-orange-50 text-orange-600 border border-orange-100 px-2 py-1 rounded-md">飯後服用</span>
+                        <span class="bg-blue-50 text-blue-600 border border-blue-100 px-2 py-1 rounded-md">藥盒第一格</span>
+                    </div>
+                </div>
+                <label class="relative inline-flex items-center cursor-pointer ml-4">
+                    <input type="checkbox" value="" class="sr-only peer" checked>
+                    <div class="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                </label>
+            </div>
+
+            <!-- 鬧鐘卡片 3 (停用狀態 - 晚間高血壓藥) -->
+            <div class="bg-slate-100 p-5 rounded-2xl shadow-inner border border-slate-200 flex justify-between items-center relative overflow-hidden transition-all opacity-70">
+                <!-- 左側顏色指示條 (灰色代表停用) -->
+                <div class="absolute left-0 top-0 bottom-0 w-2 bg-slate-300"></div>
+                
+                <div class="pl-2">
+                    <div class="flex items-baseline gap-1 mb-1">
+                        <h2 class="text-4xl font-bold text-slate-500 tracking-tighter line-through decoration-2">20:00</h2>
+                        <span class="text-sm text-slate-400 font-medium">PM</span>
+                    </div>
+                    <p class="font-bold text-slate-500"><i class="fa-solid fa-tablets mr-1"></i> 降血壓藥</p>
+                    <div class="flex flex-wrap gap-2 mt-2 text-xs font-bold">
+                        <span class="bg-slate-200 text-slate-500 px-2 py-1 rounded-md">睡前服用</span>
+                        <span class="bg-slate-200 text-slate-500 px-2 py-1 rounded-md">藥盒第二格</span>
+                    </div>
+                </div>
+
+                <!-- Toggle Switch (關閉) -->
+                <label class="relative inline-flex items-center cursor-pointer ml-4">
+                    <input type="checkbox" value="" class="sr-only peer">
+                    <div class="w-11 h-6 bg-slate-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                </label>
+            </div>
+            
+        </div>
+
+        <!-- 懸浮新增按鈕 (Floating Action Button) -->
+        <button class="absolute bottom-8 right-6 w-16 h-16 bg-blue-600 text-white rounded-full shadow-[0_8px_20px_rgba(37,99,235,0.4)] flex justify-center items-center text-2xl hover:bg-blue-700 active:scale-90 transition-all z-20 hover:-translate-y-1">
+            <i class="fa-solid fa-plus"></i>
+        </button>
+
+    </div>
+
+</body>
+</html>
