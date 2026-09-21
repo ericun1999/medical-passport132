@@ -1,0 +1,60 @@
+{
+  "expo": {
+    "name": "Medical Passport",
+    "slug": "medical-passport132",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "medicalpassport",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1d4ed8"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.medicalpassport.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow camera access to scan medicine pack text.",
+        "UIBackgroundModes": [
+          "fetch"
+        ]
+      }
+    },
+    "android": {
+      "package": "com.medicalpassport.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#1d4ed8",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": [
+        "CAMERA",
+        "RECEIVE_BOOT_COMPLETED",
+        "SCHEDULE_EXACT_ALARM",
+        "POST_NOTIFICATIONS",
+        "VIBRATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow camera access to scan medicine pack text."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "sounds": []
+        }
+      ],
+      "@react-native-community/datetimepicker"
+    ]
+  }
+}
