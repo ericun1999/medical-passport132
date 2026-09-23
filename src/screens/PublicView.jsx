@@ -3,6 +3,7 @@ import { useRoute } from '@react-navigation/native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { FontAwesome } from '@expo/vector-icons'
 import { useApp } from '../context/AppContext'
+import PageHeader from '../components/PageHeader'
 import { colors } from '../theme'
 
 export default function PublicView() {
@@ -19,6 +20,7 @@ export default function PublicView() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      <PageHeader title={t.publicHeader} />
       <ScrollView contentContainerStyle={styles.body}>
         <View style={styles.card}>
           <View style={styles.hero}>

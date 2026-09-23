@@ -49,6 +49,12 @@
         }
       ],
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow photo access to classify medicine package images."
+        }
+      ],
+      [
         "expo-notifications",
         {
           "sounds": []

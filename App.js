@@ -1,9 +1,12 @@
 import { ActivityIndicator, StyleSheet, View } from 'react-native'
 import { NavigationContainer } from '@react-navigation/native'
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { StatusBar } from 'expo-status-bar'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { FontAwesome } from '@expo/vector-icons'
 import { AppProvider, useApp } from './src/context/AppContext'
+import TabBar from './src/components/TabBar'
 import Home from './src/screens/Home'
 import PassportForm from './src/screens/PassportForm'
 import PassportCard from './src/screens/PassportCard'
@@ -12,21 +15,26 @@ import ScanMedicine from './src/screens/ScanMedicine'
 import AlarmManager from './src/screens/AlarmManager'
 import { colors } from './src/theme'
 
+const Tab = createBottomTabNavigator()
 const Stack = createNativeStackNavigator()
 
-const scanOptions = {
-  headerShown: false,
-  presentation: 'fullScreenModal',
-  animation: 'slide_from_right',
-  contentStyle: { backgroundColor: '#000', flex: 1 },
-  safeAreaInsets: { top: 0, bottom: 0, left: 0, right: 0 },
-  statusBarTranslucent: true,
-  statusBarStyle: 'light',
-  autoHideHomeIndicator: false,
+function tabIcon(name) {
+  return ({ color, size }) => <FontAwesome name={name} size={size} color={color} />
+}
+
+function PassportRoutes() {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+      <Stack.Screen name="PassportCard" component={PassportCard} />
+      <Stack.Screen name="PassportForm" component={PassportForm} />
+      <Stack.Screen name="PublicView" component={PublicView} />
+    </Stack.Navigator>
+  )
 }
 
 function Root() {
-  const { ready } = useApp()
+  const { ready, t, alarms } = useApp()
+
   if (!ready) {
     return (
       <View style={styles.boot}>
@@ -35,16 +43,47 @@ function Root() {
     )
   }
 
+  const activeAlarms = alarms.filter((item) => item.enabled).length
+
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
-        <Stack.Screen name="Home" component={Home} />
-        <Stack.Screen name="PassportForm" component={PassportForm} />
-        <Stack.Screen name="PassportCard" component={PassportCard} />
-        <Stack.Screen name="PublicView" component={PublicView} />
-        <Stack.Screen name="Scan" component={ScanMedicine} options={scanOptions} />
-        <Stack.Screen name="Alarms" component={AlarmManager} />
-      </Stack.Navigator>
+      <Tab.Navigator
+        tabBar={(props) => <TabBar {...props} />}
+        screenOptions={{
+          headerShown: false,
+          animation: 'shift',
+          sceneStyle: { backgroundColor: colors.slate50 },
+        }}
+      >
+        <Tab.Screen
+          name="Home"
+          component={Home}
+          options={{ tabBarLabel: t.tabHome, tabBarIcon: tabIcon('home') }}
+        />
+        <Tab.Screen
+          name="Passport"
+          component={PassportRoutes}
+          options={{ tabBarLabel: t.tabPassport, tabBarIcon: tabIcon('id-card') }}
+        />
+        <Tab.Screen
+          name="Scan"
+          component={ScanMedicine}
+          options={{
+            tabBarLabel: t.tabScan,
+            tabBarIcon: tabIcon('camera'),
+            sceneStyle: { backgroundColor: colors.black },
+          }}
+        />
+        <Tab.Screen
+          name="Alarms"
+          component={AlarmManager}
+          options={{
+            tabBarLabel: t.tabAlarm,
+            tabBarIcon: tabIcon('bell'),
+            tabBarBadge: activeAlarms || undefined,
+          }}
+        />
+      </Tab.Navigator>
     </NavigationContainer>
   )
 }

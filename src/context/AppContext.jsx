@@ -126,6 +126,7 @@ export function AppProvider({ children }) {
       alarms,
       toggleAlarm: (id) =>
         setAlarms((prev) => prev.map((item) => (item.id === id ? { ...item, enabled: !item.enabled } : item))),
+      deleteAlarm: (id) => setAlarms((prev) => prev.filter((item) => item.id !== id)),
       addAlarm: ({ time, name, tag }) =>
         setAlarms((prev) => [
           ...prev,

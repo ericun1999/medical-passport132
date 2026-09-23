@@ -1,17 +1,18 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useIsFocused, useNavigation } from '@react-navigation/native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import * as ImageManipulator from 'expo-image-manipulator'
+import * as ImagePicker from 'expo-image-picker'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { FontAwesome } from '@expo/vector-icons'
 import { useApp } from '../context/AppContext'
-import { LABELS, classifyAllTexts, mergeTexts, splitTexts } from '../ml/textClassifier'
-import { recognizeImage } from '../ocr/recognize'
+import { LABELS } from '../ml/textClassifier'
+import { classifyMedicineImage } from '../ai/classifyMedicineImage'
 import { colors } from '../theme'
 
-const MAX_SHOTS = 40
-const SHOT_GAP_MS = 900
+const MAX_SHOTS = 3
+const SHOT_GAP_MS = 1200
 
 function waitFor(check, timeoutMs = 10000) {
   return new Promise((resolve) => {
@@ -31,25 +32,17 @@ export default function ScanMedicine() {
   const insets = useSafeAreaInsets()
   const focused = useIsFocused()
   const cameraRef = useRef(null)
-  const textsRef = useRef([])
   const stopRef = useRef(false)
   const loopingRef = useRef(false)
   const cameraReadyRef = useRef(false)
+  const scanIdRef = useRef(0)
   const [permission, requestPermission] = useCameraPermissions()
   const [reading, setReading] = useState(false)
   const [flash, setFlash] = useState(false)
   const [resultOpen, setResultOpen] = useState(false)
-  const [texts, setTexts] = useState([])
+  const [result, setResult] = useState(null)
   const [shots, setShots] = useState(0)
   const [error, setError] = useState('')
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerShown: false,
-      safeAreaInsets: { top: 0, bottom: 0, left: 0, right: 0 },
-      contentStyle: { backgroundColor: '#000', flex: 1 },
-    })
-  }, [navigation])
 
   useEffect(() => {
     if (permission && !permission.granted) requestPermission()
@@ -58,6 +51,7 @@ export default function ScanMedicine() {
   useEffect(() => {
     if (!focused) {
       stopRef.current = true
+      scanIdRef.current += 1
       cameraReadyRef.current = false
       return
     }
@@ -68,7 +62,7 @@ export default function ScanMedicine() {
     }
   }, [focused, permission?.granted])
 
-  async function captureOnce() {
+  async function captureOnce(scanId) {
     const camera = cameraRef.current
     if (!camera?.takePictureAsync) return null
     let photo
@@ -86,37 +80,31 @@ export default function ScanMedicine() {
     setShots((n) => n + 1)
     setFlash(true)
     setTimeout(() => setFlash(false), 120)
-    if (!photo?.uri && !photo?.base64) return classifyAllTexts(textsRef.current)
-    try {
-      let uri = photo.uri
-      let base64 = photo.base64
-      if (photo.uri) {
-        const small = await ImageManipulator.manipulateAsync(photo.uri, [{ resize: { width: 960 } }], {
-          compress: 0.7,
-          format: ImageManipulator.SaveFormat.JPEG,
-          base64: true,
-        })
-        uri = small.uri || uri
-        base64 = small.base64 || base64
-      }
-      const found = await recognizeImage({ uri, base64 })
-      const incoming = splitTexts(found)
-      if (incoming.length) {
-        const merged = mergeTexts(textsRef.current, incoming)
-        textsRef.current = merged
-        setTexts(merged)
-      }
-    } catch (err) {
-      console.warn('ocr', err?.message || err)
+    if (!photo?.uri && !photo?.base64) return null
+
+    let base64 = photo.base64
+    if (photo.uri) {
+      const small = await ImageManipulator.manipulateAsync(photo.uri, [{ resize: { width: 1024 } }], {
+        compress: 0.72,
+        format: ImageManipulator.SaveFormat.JPEG,
+        base64: true,
+      })
+      base64 = small.base64 || base64
     }
-    return classifyAllTexts(textsRef.current)
+
+    const classified = await classifyMedicineImage({ base64, mimeType: 'image/jpeg' })
+    if (scanId !== scanIdRef.current || stopRef.current) return null
+    setResult(classified)
+    return classified
   }
 
   async function autoCaptureLoop() {
     if (loopingRef.current || stopRef.current) return
+    const scanId = ++scanIdRef.current
     loopingRef.current = true
     setReading(true)
     setError('')
+    setResult(null)
     setResultOpen(false)
     try {
       const ready = await waitFor(
@@ -132,7 +120,8 @@ export default function ScanMedicine() {
       }
       let taken = 0
       while (!stopRef.current && taken < MAX_SHOTS) {
-        const classified = await captureOnce()
+        const classified = await captureOnce(scanId)
+        if (scanId !== scanIdRef.current) return
         if (!classified) {
           await new Promise((resolve) => setTimeout(resolve, SHOT_GAP_MS))
           taken += 1
@@ -140,6 +129,7 @@ export default function ScanMedicine() {
         }
         taken += 1
         if (classified.found.length > 0) {
+          stopRef.current = true
           setResultOpen(true)
           return
         }
@@ -150,43 +140,78 @@ export default function ScanMedicine() {
         setResultOpen(true)
       }
     } catch (err) {
-      console.error(err)
+      console.warn('gemini', err?.message || err)
       if (!stopRef.current) {
-        setError(t.scanFailMsg)
+        setError(err?.message || t.scanFailMsg)
         setResultOpen(true)
       }
     } finally {
       loopingRef.current = false
-      setReading(false)
+      if (scanId === scanIdRef.current) setReading(false)
     }
   }
 
   function retryScan() {
     stopRef.current = false
-    textsRef.current = []
-    setTexts([])
+    setResult(null)
+    setError('')
     setShots(0)
     autoCaptureLoop()
   }
 
-  const result = classifyAllTexts(texts)
-  const classified = result.found.length > 0
+  async function pickAndClassify() {
+    stopRef.current = true
+    const scanId = ++scanIdRef.current
+    const picked = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      base64: true,
+      quality: 0.8,
+    })
+    if (picked.canceled) return
+
+    const image = picked.assets?.[0]
+    if (!image?.base64) {
+      setError(t.scanFailMsg)
+      setResultOpen(true)
+      return
+    }
+
+    setReading(true)
+    setError('')
+    setResult(null)
+    setResultOpen(false)
+    setShots(1)
+    try {
+      const classified = await classifyMedicineImage({
+        base64: image.base64,
+        mimeType: image.mimeType || 'image/jpeg',
+      })
+      if (scanId !== scanIdRef.current) return
+      setResult(classified)
+      if (!classified.found.length) setError(t.scanFailMsg)
+      setResultOpen(true)
+    } catch (err) {
+      if (scanId !== scanIdRef.current) return
+      console.warn('gemini', err?.message || err)
+      setError(err?.message || t.scanFailMsg)
+      setResultOpen(true)
+    } finally {
+      if (scanId === scanIdRef.current) setReading(false)
+    }
+  }
+
+  const classified = Boolean(result?.found.length)
 
   function confirmAlarms() {
-    const names = result.found.map((item) => item.name)
+    const names = result?.found.map((item) => item.name) || []
     if (!names.length) return
     stopRef.current = true
     replaceAlarmsFromScan(names)
     navigation.navigate('Alarms')
   }
 
-  function goHome() {
-    stopRef.current = true
-    navigation.navigate('Home')
-  }
-
   return (
-    <View style={[styles.root, { marginTop: insets.top * 4 }]}>
+    <View style={styles.root}>
       {focused && permission?.granted ? (
         <CameraView
           ref={cameraRef}
@@ -203,22 +228,26 @@ export default function ScanMedicine() {
       )}
       {flash ? <View style={styles.flash} pointerEvents="none" /> : null}
       <View style={styles.overlay} pointerEvents="box-none">
-        <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 4) }]}>
-          <Pressable onPress={goHome} style={styles.back}>
-            <FontAwesome name="chevron-left" size={16} color={colors.white} />
-          </Pressable>
+        <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 12) }]}>
+          <View style={styles.status}>
+            <View style={[styles.dot, reading && styles.dotOn]} />
+            <Text style={styles.shotCount}>{shots}</Text>
+          </View>
           <Text style={styles.title}>{t.scanHeader}</Text>
-          <View style={styles.back} />
+          <Pressable onPress={retryScan} style={styles.iconBtn}>
+            <FontAwesome name="refresh" size={16} color={colors.white} />
+          </Pressable>
         </View>
-        <View style={styles.frameWrap} pointerEvents="none">
-          <View style={styles.frame} />
-          <Text style={styles.tip}>{reading ? `${t.scanAutoRunning} (${shots})` : t.scanTip}</Text>
-        </View>
+
         {permission && !permission.granted ? (
           <Pressable onPress={requestPermission} style={styles.permBtn}>
             <Text style={styles.permText}>Allow camera</Text>
           </Pressable>
         ) : null}
+        <Pressable onPress={pickAndClassify} style={styles.albumBtn}>
+          <FontAwesome name="image" size={15} color={colors.white} />
+          <Text style={styles.albumText}>{t.scanAlbum}</Text>
+        </Pressable>
       </View>
 
       {resultOpen ? (
@@ -239,8 +268,8 @@ export default function ScanMedicine() {
                 {t.scanShots}: {shots}
               </Text>
               {LABELS.map((item) => {
-                const found = result.found.some((entry) => entry.id === item.id)
-                const score = result.combined.scores.find((entry) => entry.id === item.id)?.score || 0
+                const found = result?.found.some((entry) => entry.id === item.id)
+                const score = result?.scores.find((entry) => entry.id === item.id)?.score || 0
                 return (
                   <View key={item.id} style={styles.labelCard}>
                     <View style={styles.labelRow}>
@@ -262,14 +291,14 @@ export default function ScanMedicine() {
                 )
               })}
               <Text style={styles.typedLabel}>{t.scanTypedLabel}</Text>
-              {result.items.map((item, index) => (
-                <View key={`${item.text}-${index}`} style={styles.textCard}>
-                  <Text style={styles.itemText}>{item.text}</Text>
-                  <Text style={{ color: item.confident ? colors.emerald600 : colors.amber500, marginTop: 4 }}>
-                    {item.confident ? item.name : t.scanPending}
+              <View style={styles.textCard}>
+                <Text style={styles.itemText}>{result?.text || t.empty}</Text>
+                {result?.matches.map((item, index) => (
+                  <Text key={`${item.id}-${index}`} style={styles.evidence}>
+                    {item.evidence} · {Math.round(item.confidence * 100)}%
                   </Text>
-                </View>
-              ))}
+                ))}
+              </View>
               <Pressable onPress={confirmAlarms} style={styles.confirm}>
                 <Text style={styles.confirmText}>{t.scanConfirm}</Text>
               </Pressable>
@@ -282,7 +311,7 @@ export default function ScanMedicine() {
 }
 
 const styles = StyleSheet.create({
-  root: { backgroundColor: colors.black },
+  root: { flex: 1, backgroundColor: colors.black },
   black: { ...StyleSheet.absoluteFillObject, backgroundColor: colors.black },
   flash: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(255,255,255,0.55)', zIndex: 20 },
   overlay: { ...StyleSheet.absoluteFillObject },
@@ -299,16 +328,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     backgroundColor: 'rgba(0,0,0,0.55)',
   },
-  back: {
+  iconBtn: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  status: {
+    width: 40,
+    alignItems: 'center',
+    gap: 2,
+  },
+  dot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.slate500 },
+  dotOn: { backgroundColor: colors.emerald500 },
+  shotCount: { color: colors.slate200, fontSize: 11, fontWeight: '700' },
   title: { color: colors.white, fontSize: 18, fontWeight: '700' },
-  frameWrap: { alignItems: 'center', marginTop: 64 },
+  frameWrap: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   frame: {
     width: 256,
     height: 256,
@@ -334,15 +371,31 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   permText: { color: colors.white, fontWeight: '700' },
+  albumBtn: {
+    position: 'absolute',
+    left: 24,
+    right: 24,
+    bottom: 20,
+    backgroundColor: 'rgba(15,23,42,0.82)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+    borderRadius: 14,
+    paddingVertical: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  albumText: { color: colors.white, fontWeight: '700' },
   sheet: {
     position: 'absolute',
     left: 0,
     right: 0,
-    top: 0,
-    maxHeight: '85%',
+    bottom: 0,
+    maxHeight: '80%',
     backgroundColor: colors.white,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     padding: 24,
     paddingTop: 16,
     zIndex: 30,
@@ -360,6 +413,7 @@ const styles = StyleSheet.create({
   typedLabel: { fontWeight: '700', color: colors.slate600, marginTop: 8, marginBottom: 8 },
   textCard: { backgroundColor: colors.slate50, borderRadius: 8, padding: 8, marginBottom: 8 },
   itemText: { color: colors.slate800, fontWeight: '500' },
+  evidence: { color: colors.slate500, fontSize: 12, marginTop: 6 },
   confirm: {
     backgroundColor: colors.emerald600,
     borderRadius: 12,

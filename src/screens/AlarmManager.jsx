@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
-import { useNavigation } from '@react-navigation/native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { FontAwesome } from '@expo/vector-icons'
 import DateTimePicker from '@react-native-community/datetimepicker'
@@ -20,14 +19,15 @@ function dateToTime(date) {
 }
 
 export default function AlarmManager() {
-  const { t, alarms, toggleAlarm, addAlarm, notifyOk, requestNotify, testAlarm } = useApp()
-  const navigation = useNavigation()
+  const { t, alarms, toggleAlarm, deleteAlarm, addAlarm, notifyOk, requestNotify, testAlarm } = useApp()
   const [showForm, setShowForm] = useState(false)
   const [time, setTime] = useState('08:00')
   const [name, setName] = useState('')
   const [tag, setTag] = useState('')
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [pendingDelete, setPendingDelete] = useState(null)
   const pickerDate = useMemo(() => timeToDate(time), [time])
+  const activeCount = alarms.filter((item) => item.enabled).length
 
   function handleSave() {
     if (!name.trim()) return
@@ -37,14 +37,20 @@ export default function AlarmManager() {
     setShowForm(false)
   }
 
+  function confirmDelete() {
+    if (!pendingDelete) return
+    deleteAlarm(pendingDelete.id)
+    setPendingDelete(null)
+  }
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <View style={styles.header}>
-        <Pressable onPress={() => navigation.navigate('Home')} style={styles.iconBtn}>
-          <FontAwesome name="chevron-left" size={14} color={colors.white} />
-        </Pressable>
         <Text style={styles.headerTitle}>{t.alarmHeader}</Text>
-        <View style={styles.iconBtn} />
+        <View style={styles.countChip}>
+          <FontAwesome name="bell" size={12} color={colors.white} />
+          <Text style={styles.countText}>{activeCount}</Text>
+        </View>
       </View>
 
       {!notifyOk ? (
@@ -72,7 +78,16 @@ export default function AlarmManager() {
                 <Text style={[styles.tagText, !alarm.enabled && { color: colors.slate500 }]}>{alarm.tag || t.dailyMed}</Text>
               </View>
             </View>
-            <Toggle checked={alarm.enabled} onChange={() => toggleAlarm(alarm.id)} />
+            <View style={styles.actions}>
+              <Toggle checked={alarm.enabled} onChange={() => toggleAlarm(alarm.id)} />
+              <Pressable
+                onPress={() => setPendingDelete(alarm)}
+                style={styles.deleteBtn}
+                accessibilityLabel={t.deleteAlarm}
+              >
+                <FontAwesome name="trash" size={16} color={colors.red600} />
+              </Pressable>
+            </View>
           </View>
         ))}
       </ScrollView>
@@ -80,6 +95,25 @@ export default function AlarmManager() {
       <Pressable onPress={() => setShowForm(true)} style={styles.fab}>
         <FontAwesome name="plus" size={22} color={colors.white} />
       </Pressable>
+
+      <Modal visible={!!pendingDelete} transparent animationType="fade" onRequestClose={() => setPendingDelete(null)}>
+        <View style={styles.dialogBg}>
+          <View style={styles.dialog}>
+            <Text style={styles.sheetTitle}>{t.deleteAlarm}</Text>
+            <Text style={styles.dialogBody}>
+              {pendingDelete ? `${pendingDelete.time}  ${pendingDelete.name}` : ''}
+            </Text>
+            <View style={styles.sheetActions}>
+              <Pressable onPress={() => setPendingDelete(null)} style={styles.cancel}>
+                <Text style={styles.cancelText}>{t.cancel}</Text>
+              </Pressable>
+              <Pressable onPress={confirmDelete} style={styles.deleteConfirm}>
+                <Text style={styles.saveText}>{t.deleteAlarm}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={showForm} transparent animationType="slide" onRequestClose={() => setShowForm(false)}>
         <View style={styles.sheetBg}>
@@ -134,15 +168,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  iconBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+  countChip: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 6,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
-  headerTitle: { color: colors.white, fontSize: 20, fontWeight: '700' },
+  countText: { color: colors.white, fontWeight: '800', fontSize: 13 },
+  headerTitle: { color: colors.white, fontSize: 22, fontWeight: '800' },
   permBanner: { backgroundColor: colors.amber100, padding: 12 },
   permText: { color: colors.amber700, fontWeight: '600', textAlign: 'center' },
   testBanner: { backgroundColor: colors.blue700, padding: 12 },
@@ -178,10 +214,19 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   tagText: { color: colors.orange600, fontSize: 12, fontWeight: '700' },
+  actions: { alignItems: 'center', gap: 12, marginLeft: 8 },
+  deleteBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.red50,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   fab: {
     position: 'absolute',
-    right: 24,
-    bottom: 32,
+    right: 20,
+    bottom: 20,
     width: 64,
     height: 64,
     borderRadius: 32,
@@ -190,6 +235,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     elevation: 6,
   },
+  dialogBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', padding: 24 },
+  dialog: { backgroundColor: colors.white, borderRadius: 16, padding: 24 },
+  dialogBody: { marginTop: 8, color: colors.slate600, fontSize: 15 },
+  deleteConfirm: { flex: 1, backgroundColor: colors.red600, borderRadius: 12, paddingVertical: 12, alignItems: 'center' },
   sheetBg: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   sheet: { backgroundColor: colors.white, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
   handle: { width: 48, height: 4, backgroundColor: colors.slate200, borderRadius: 2, alignSelf: 'center', marginBottom: 12 },

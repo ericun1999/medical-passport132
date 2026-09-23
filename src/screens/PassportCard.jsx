@@ -49,6 +49,24 @@ export default function PassportCard() {
     }
   }
 
+  if (!passport.name) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.empty}>
+          <View style={styles.emptyIcon}>
+            <FontAwesome name="id-card" size={32} color={colors.blue700} />
+          </View>
+          <Text style={styles.emptyTitle}>{t.formHeader}</Text>
+          <Text style={styles.emptyDesc}>{t.descPassport}</Text>
+          <Pressable onPress={() => navigation.navigate('PassportForm')} style={styles.emptyBtn}>
+            <FontAwesome name="pencil" size={14} color={colors.white} />
+            <Text style={styles.actionText}>{t.submitBtn}</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    )
+  }
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.body}>
@@ -101,8 +119,8 @@ export default function PassportCard() {
           <Pressable onPress={handleExport} disabled={exporting} style={styles.export}>
             <Text style={styles.actionText}>{exporting ? t.btnExporting : t.btnExport}</Text>
           </Pressable>
-          <Pressable onPress={() => navigation.navigate('Home')} style={styles.home}>
-            <Text style={styles.homeText}>{t.btnHome}</Text>
+          <Pressable onPress={() => navigation.navigate('PassportForm')} style={styles.edit}>
+            <Text style={styles.editText}>{t.btnEdit}</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -173,7 +191,7 @@ const styles = StyleSheet.create({
   shareText: { color: colors.white, fontWeight: '700' },
   actions: { flexDirection: 'row', gap: 12, marginTop: 16 },
   export: { flex: 1, backgroundColor: colors.emerald600, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
-  home: {
+  edit: {
     flex: 1,
     backgroundColor: colors.white,
     borderRadius: 12,
@@ -183,5 +201,27 @@ const styles = StyleSheet.create({
     borderColor: colors.slate200,
   },
   actionText: { color: colors.white, fontWeight: '700' },
-  homeText: { color: colors.slate700, fontWeight: '700' },
+  editText: { color: colors.slate700, fontWeight: '700' },
+  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 8 },
+  emptyIcon: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: '#dbeafe',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  emptyTitle: { fontSize: 20, fontWeight: '800', color: colors.slate800, textAlign: 'center' },
+  emptyDesc: { fontSize: 14, color: colors.slate500, textAlign: 'center' },
+  emptyBtn: {
+    marginTop: 16,
+    backgroundColor: colors.blue700,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
 })

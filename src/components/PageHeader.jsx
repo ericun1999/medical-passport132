@@ -9,7 +9,7 @@ export default function PageHeader({ title, onBack, extra }) {
   return (
     <View style={styles.wrap}>
       <Pressable
-        onPress={onBack || (() => navigation.navigate('Home'))}
+        onPress={onBack || (() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Home')))}
         style={styles.back}
       >
         <FontAwesome name="chevron-left" size={14} color={colors.white} />
