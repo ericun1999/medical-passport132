@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { translations } from '../i18n/translations'
+import { formatHistory } from '../data/conditions'
 import { initNotifications, ringAlarm, startForegroundWatcher, syncAlarmNotifications, testAlarmInSeconds } from '../notifications'
 
 const STORAGE_KEYS = {
@@ -173,7 +174,7 @@ export function AppProvider({ children }) {
           name: passport.name || '',
           blood: passport.blood || '',
           contact: passport.contact || '',
-          history: passport.history || '',
+          history: formatHistory(passport.history, t),
           allergy: passport.allergy || '',
           meds: passport.meds || '',
         }

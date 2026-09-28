@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { FontAwesome } from '@expo/vector-icons'
 import { useApp } from '../context/AppContext'
+import { formatHistory } from '../data/conditions'
 import { colors } from '../theme'
 
 export default function PassportCard() {
@@ -15,7 +16,7 @@ export default function PassportCard() {
     name: passport.name || t.notFilled,
     blood: passport.blood || 'O',
     contact: passport.contact || t.notFilled,
-    history: passport.history || t.empty,
+    history: formatHistory(passport.history, t, t.empty),
     allergy: passport.allergy || t.empty,
     meds: passport.meds || t.empty,
   }

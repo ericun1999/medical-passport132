@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { FontAwesome } from '@expo/vector-icons'
 import { useApp } from '../context/AppContext'
 import PageHeader from '../components/PageHeader'
+import { CONDITION_IDS, parseHistory } from '../data/conditions'
 import { colors } from '../theme'
 
 const BLOOD = ['O', 'A', 'B', 'AB', 'Rh']
@@ -16,13 +17,26 @@ export default function PassportForm() {
     name: passport.name || '',
     blood: passport.blood || 'O',
     contact: passport.contact || '',
-    history: passport.history || '',
+    history: parseHistory(passport.history, t).join(','),
     allergy: passport.allergy || '',
     meds: passport.meds || '',
   })
 
   function update(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  function toggleHistory(id) {
+    const current = parseHistory(form.history, t)
+    let next
+    if (id === 'none') {
+      next = current.includes('none') ? [] : ['none']
+    } else if (current.includes(id)) {
+      next = current.filter((item) => item !== id)
+    } else {
+      next = [...current.filter((item) => item !== 'none'), id]
+    }
+    update('history', next.join(','))
   }
 
   function handleSubmit() {
@@ -82,13 +96,24 @@ export default function PassportForm() {
           </View>
         </View>
         <Text style={styles.label}>{t.labelHistory}</Text>
-        <TextInput
-          value={form.history}
-          onChangeText={(value) => update('history', value)}
-          placeholder={t.placeholderHistory}
-          multiline
-          style={[styles.input, styles.area]}
-        />
+        <Text style={styles.hint}>{t.historyPick}</Text>
+        <View style={styles.historyWrap}>
+          {CONDITION_IDS.map((id) => {
+            const selected = parseHistory(form.history, t).includes(id)
+            return (
+              <Pressable
+                key={id}
+                onPress={() => toggleHistory(id)}
+                style={[styles.historyChip, selected && styles.historyChipOn]}
+                accessibilityRole="button"
+                accessibilityState={{ selected }}
+              >
+                {selected ? <FontAwesome name="check" size={12} color={colors.white} /> : null}
+                <Text style={[styles.historyText, selected && styles.historyTextOn]}>{t.conditions[id]}</Text>
+              </Pressable>
+            )
+          })}
+        </View>
         <Text style={styles.label}>{t.labelAllergy}</Text>
         <TextInput
           value={form.allergy}
@@ -125,7 +150,22 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     color: colors.slate800,
   },
-  area: { height: 80, textAlignVertical: 'top' },
+  hint: { marginTop: 4, fontSize: 12, color: colors.slate500 },
+  historyWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 8 },
+  historyChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderColor: colors.slate200,
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: colors.white,
+  },
+  historyChipOn: { backgroundColor: colors.blue700, borderColor: colors.blue700 },
+  historyText: { fontSize: 13, color: colors.slate700, fontWeight: '600' },
+  historyTextOn: { color: colors.white },
   row: { flexDirection: 'row', gap: 12 },
   half: { flex: 1 },
   bloodWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6 },

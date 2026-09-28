@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { FontAwesome } from '@expo/vector-icons'
 import { useApp } from '../context/AppContext'
 import PageHeader from '../components/PageHeader'
+import { formatHistory } from '../data/conditions'
 import { colors } from '../theme'
 
 export default function PublicView() {
@@ -13,7 +14,7 @@ export default function PublicView() {
     name: params.name || t.notFilled,
     blood: params.blood || 'O',
     contact: params.contact || t.notFilled,
-    history: params.history || t.empty,
+    history: formatHistory(params.history, t, t.empty),
     allergy: params.allergy || t.empty,
     meds: params.meds || t.empty,
   }
