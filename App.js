@@ -8,6 +8,7 @@ import { FontAwesome } from '@expo/vector-icons'
 import { AppProvider, useApp } from './src/context/AppContext'
 import TabBar from './src/components/TabBar'
 import Home from './src/screens/Home'
+import Login from './src/screens/Login'
 import PassportForm from './src/screens/PassportForm'
 import PassportCard from './src/screens/PassportCard'
 import PublicView from './src/screens/PublicView'
@@ -33,15 +34,17 @@ function PassportRoutes() {
 }
 
 function Root() {
-  const { ready, t, alarms } = useApp()
+  const { ready, authReady, user, t, alarms } = useApp()
 
-  if (!ready) {
+  if (!ready || !authReady) {
     return (
       <View style={styles.boot}>
         <ActivityIndicator size="large" color={colors.blue700} />
       </View>
     )
   }
+
+  if (!user) return <Login />
 
   const activeAlarms = alarms.filter((item) => item.enabled).length
 

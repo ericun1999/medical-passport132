@@ -98,7 +98,8 @@
                         </div>
                         <div>
                             <label data-i18n="labelContact" class="text-sm font-bold text-slate-600">緊急聯絡人</label>
-                            <input type="tel" id="input-contact" data-i18n-placeholder="placeholderContact" class="w-full mt-1 p-3 bg-white border border-slate-200 rounded-xl outline-none" placeholder="聯絡人號碼">
+                            <input type="text" id="input-contact-name" data-i18n-placeholder="placeholderContactName" class="w-full mt-1 p-3 bg-white border border-slate-200 rounded-xl outline-none" placeholder="聯絡人姓名">
+                            <input type="tel" id="input-contact" data-i18n-placeholder="placeholderContact" class="w-full mt-3 p-3 bg-white border border-slate-200 rounded-xl outline-none" placeholder="聯絡人號碼">
                         </div>
                     </div>
                     <div>
@@ -142,7 +143,8 @@
                     </div>
                     <div class="bg-orange-50 p-3 rounded-xl border border-orange-100">
                         <p data-i18n="cardContactTitle" class="text-xs text-orange-600 font-bold">緊急聯絡人</p>
-                        <p id="card-contact" class="font-bold text-slate-800">+853 6666 8888</p>
+                        <p id="card-contact-name" class="font-bold text-slate-800">張曉明</p>
+                        <p id="card-contact" class="text-sm text-slate-700">+853 6666 8888</p>
                     </div>
                     <div>
                         <p data-i18n="cardHistoryTitle" class="text-xs text-slate-400 font-bold">病史</p>
@@ -176,7 +178,7 @@
 
         <!-- ================= 頁面 4：純資料檢視頁 (Public View) ================= -->
         <div id="page-public-view" class="page flex-col h-full bg-slate-100 overflow-y-auto p-4">
-            <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200 my-auto">
+                    <div class="bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200 my-auto">
                 <div class="bg-indigo-700 p-6 text-center text-white">
                     <div class="w-16 h-16 mx-auto bg-white rounded-full flex justify-center items-center mb-3 text-indigo-700 shadow">
                         <i class="fa-solid fa-id-card-clip text-3xl"></i>
@@ -197,7 +199,8 @@
                     </div>
                     <div class="bg-orange-50 p-3 rounded-xl border border-orange-100">
                         <p class="text-xs text-orange-600 font-bold">緊急聯絡人</p>
-                        <p id="pub-contact" class="font-bold text-slate-800">--</p>
+                        <p id="pub-contact-name" class="font-bold text-slate-800">--</p>
+                        <p id="pub-contact" class="text-sm text-slate-700">--</p>
                     </div>
                     <div>
                         <p class="text-xs text-slate-400 font-bold">病史</p>
@@ -313,6 +316,7 @@
                 submitBtn: '生成專屬 Passport',
                 placeholderName: '請輸入全名',
                 placeholderContact: '聯絡人號碼',
+                placeholderContactName: '聯絡人姓名',
                 placeholderHistory: '例如：高血壓',
                 placeholderAllergy: '例如：盤尼西林',
                 placeholderMeds: '例如：阿斯匹靈',
@@ -348,6 +352,7 @@
                 submitBtn: '生成专属 Passport',
                 placeholderName: '请输入全名',
                 placeholderContact: '联系人号码',
+                placeholderContactName: '联系人姓名',
                 placeholderHistory: '例如：高血压',
                 placeholderAllergy: '例如：青霉素',
                 placeholderMeds: '例如：阿司匹林',
@@ -383,6 +388,7 @@
                 submitBtn: 'Generate Passport',
                 placeholderName: 'Enter full name',
                 placeholderContact: 'Contact number',
+                placeholderContactName: 'Contact name',
                 placeholderHistory: 'e.g., Hypertension',
                 placeholderAllergy: 'e.g., Penicillin',
                 placeholderMeds: 'e.g., Aspirin',
@@ -418,6 +424,7 @@
                 submitBtn: 'パスポートを生成',
                 placeholderName: '氏名を入力',
                 placeholderContact: '連絡先番号',
+                placeholderContactName: '連絡先氏名',
                 placeholderHistory: '例：高血圧',
                 placeholderAllergy: '例：ペニシリン',
                 placeholderMeds: '例：アスピリン',
@@ -453,6 +460,7 @@
                 submitBtn: '여권 생성하기',
                 placeholderName: '성함 입력',
                 placeholderContact: '연락처 번호',
+                placeholderContactName: '연락처 이름',
                 placeholderHistory: '예: 고혈압',
                 placeholderAllergy: '예: 페니실린',
                 placeholderMeds: '예: 아스피린',
@@ -488,6 +496,7 @@
                 submitBtn: 'Gerar Passaporte',
                 placeholderName: 'Digite o nome completo',
                 placeholderContact: 'Número de contato',
+                placeholderContactName: 'Nome do contato',
                 placeholderHistory: 'Ex: Hipertensão',
                 placeholderAllergy: 'Ex: Penicilina',
                 placeholderMeds: 'Ex: Aspirina',
@@ -523,6 +532,7 @@
                 submitBtn: 'Generar Pasaporte',
                 placeholderName: 'Ingresa tu nombre completo',
                 placeholderContact: 'Número de contacto',
+                placeholderContactName: 'Nombre del contacto',
                 placeholderHistory: 'Ej: Hipertensión',
                 placeholderAllergy: 'Ej: Penicilina',
                 placeholderMeds: 'Ej: Aspirina',
@@ -546,6 +556,7 @@
             if (urlParams.has('view') && urlParams.get('view') === 'public') {
                 document.getElementById('pub-name').innerText = urlParams.get('name') || '未填寫';
                 document.getElementById('pub-blood').innerText = urlParams.get('blood') || 'O';
+                document.getElementById('pub-contact-name').innerText = urlParams.get('contactName') || '未填寫';
                 document.getElementById('pub-contact').innerText = urlParams.get('contact') || '未填寫';
                 document.getElementById('pub-history').innerText = urlParams.get('history') || '無';
                 document.getElementById('pub-allergy').innerText = urlParams.get('allergy') || '無';
@@ -680,6 +691,7 @@
             event.preventDefault();
             document.getElementById('card-name').innerText = document.getElementById('input-name').value || '陳大文';
             document.getElementById('card-blood').innerText = document.getElementById('input-blood').value;
+            document.getElementById('card-contact-name').innerText = document.getElementById('input-contact-name').value || '未填寫';
             document.getElementById('card-contact').innerText = document.getElementById('input-contact').value || '+853 6666 8888';
             document.getElementById('card-history').innerText = document.getElementById('input-history').value || '無';
             document.getElementById('card-allergy').innerText = document.getElementById('input-allergy').value || '無';
@@ -692,13 +704,14 @@
         function generateShareLink() {
             const name = encodeURIComponent(document.getElementById('card-name').innerText);
             const blood = encodeURIComponent(document.getElementById('card-blood').innerText);
+            const contactName = encodeURIComponent(document.getElementById('card-contact-name').innerText);
             const contact = encodeURIComponent(document.getElementById('card-contact').innerText);
             const history = encodeURIComponent(document.getElementById('card-history').innerText);
             const allergy = encodeURIComponent(document.getElementById('card-allergy').innerText);
             const meds = encodeURIComponent(document.getElementById('card-meds').innerText);
 
             const baseUrl = window.location.origin + window.location.pathname;
-            const shareUrl = `${baseUrl}?view=public&name=${name}&blood=${blood}&contact=${contact}&history=${history}&allergy=${allergy}&meds=${meds}`;
+            const shareUrl = `${baseUrl}?view=public&name=${name}&blood=${blood}&contactName=${contactName}&contact=${contact}&history=${history}&allergy=${allergy}&meds=${meds}`;
 
             const linkBox = document.getElementById('share-link-box');
             const linkInput = document.getElementById('share-link-input');
@@ -722,6 +735,7 @@
             const formData = {
                 name: document.getElementById('card-name').innerText,
                 blood: document.getElementById('card-blood').innerText,
+                contactName: document.getElementById('card-contact-name').innerText,
                 contact: document.getElementById('card-contact').innerText,
                 history: document.getElementById('card-history').innerText,
                 allergy: document.getElementById('card-allergy').innerText,

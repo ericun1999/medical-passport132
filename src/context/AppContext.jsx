@@ -1,4 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { auth, onAuthStateChanged, db } from '../firebase'
+import { signInWithEmail as emailSignIn, registerWithEmail as emailRegister, signOutUser } from '../auth/emailAuth'
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { translations } from '../i18n/translations'
 import { formatHistory } from '../data/conditions'
@@ -24,6 +27,7 @@ function uid() {
 const defaultPassport = {
   name: '',
   blood: 'O',
+  contactName: '',
   contact: '',
   history: '',
   allergy: '',
@@ -46,8 +50,10 @@ const AppContext = createContext(null)
 
 export function AppProvider({ children }) {
   const [ready, setReady] = useState(false)
+  const [authReady, setAuthReady] = useState(false)
   const [lang, setLang] = useState('zh-HK')
   const [passport, setPassport] = useState(defaultPassport)
+  const [user, setUser] = useState(null)
   const [alarms, setAlarms] = useState(defaultAlarms)
   const [notifyOk, setNotifyOk] = useState(false)
   const alarmsRef = useRef(defaultAlarms)
@@ -76,6 +82,18 @@ export function AppProvider({ children }) {
   }, [])
 
   useEffect(() => {
+    if (!auth) {
+      setAuthReady(true)
+      return undefined
+    }
+    const unsub = onAuthStateChanged(auth, (u) => {
+      setUser(u || null)
+      setAuthReady(true)
+    })
+    return () => unsub()
+  }, [])
+
+  useEffect(() => {
     if (!ready) return
     AsyncStorage.setItem(STORAGE_KEYS.lang, lang).catch(() => {})
   }, [lang, ready])
@@ -99,6 +117,7 @@ export function AppProvider({ children }) {
   const value = useMemo(
     () => ({
       ready,
+      authReady,
       notifyOk,
       requestNotify: async () => {
         const granted = await initNotifications()
@@ -123,7 +142,34 @@ export function AppProvider({ children }) {
       setLang,
       t,
       passport,
-      savePassport: (data) => setPassport(data),
+      user,
+      signInWithEmail: async (email, password) => {
+        const nextUser = await emailSignIn(email, password)
+        if (nextUser) setUser(nextUser)
+        return nextUser
+      },
+      registerWithEmail: async (email, password) => {
+        const nextUser = await emailRegister(email, password)
+        if (nextUser) setUser(nextUser)
+        return nextUser
+      },
+      signOut: async () => {
+        try {
+          await signOutUser()
+          setUser(null)
+        } catch (err) {
+          console.error('Sign out failed', err)
+        }
+      },
+      savePassport: (data) => {
+        setPassport(data)
+        if (db && user?.uid) {
+          const ref = doc(db, 'passports', user.uid)
+          setDoc(ref, { ...data, uid: user.uid, updatedAt: serverTimestamp() }).catch((err) =>
+            console.error('Failed to save passport to firestore', err),
+          )
+        }
+      },
       alarms,
       toggleAlarm: (id) =>
         setAlarms((prev) => prev.map((item) => (item.id === id ? { ...item, enabled: !item.enabled } : item))),
@@ -173,6 +219,7 @@ export function AppProvider({ children }) {
         const payload = {
           name: passport.name || '',
           blood: passport.blood || '',
+          contactName: passport.contactName || '',
           contact: passport.contact || '',
           history: formatHistory(passport.history, t),
           allergy: passport.allergy || '',
@@ -205,7 +252,7 @@ export function AppProvider({ children }) {
         }
       },
     }),
-    [ready, notifyOk, lang, t, passport, alarms],
+    [ready, authReady, notifyOk, lang, t, passport, alarms, user],
   )
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

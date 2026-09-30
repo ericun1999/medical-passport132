@@ -16,6 +16,7 @@ export default function PassportForm() {
   const [form, setForm] = useState({
     name: passport.name || '',
     blood: passport.blood || 'O',
+    contactName: passport.contactName || '',
     contact: passport.contact || '',
     history: parseHistory(passport.history, t).join(','),
     allergy: passport.allergy || '',
@@ -44,6 +45,7 @@ export default function PassportForm() {
     savePassport({
       ...form,
       name: form.name.trim(),
+      contactName: form.contactName.trim(),
       contact: form.contact.trim(),
       history: form.history.trim(),
       allergy: form.allergy.trim(),
@@ -87,11 +89,17 @@ export default function PassportForm() {
           <View style={styles.half}>
             <Text style={styles.label}>{t.labelContact}</Text>
             <TextInput
+              value={form.contactName}
+              onChangeText={(value) => update('contactName', value)}
+              placeholder={t.placeholderContactName || t.placeholderContact}
+              style={styles.input}
+            />
+            <TextInput
               value={form.contact}
               onChangeText={(value) => update('contact', value)}
               placeholder={t.placeholderContact}
               keyboardType="phone-pad"
-              style={styles.input}
+              style={[styles.input, { marginTop: 8 }]}
             />
           </View>
         </View>

@@ -13,12 +13,13 @@ function minutesOf(time) {
 }
 
 export default function Home() {
-  const { t, lang, setLang, alarms, passport } = useApp()
+  const { t, lang, setLang, alarms, passport, user, signOut } = useApp()
   const navigation = useNavigation()
   const [langOpen, setLangOpen] = useState(false)
   const [now, setNow] = useState(() => new Date())
   const current = languages.find((item) => item.value === lang)?.label || lang
   const filled = Boolean(passport.name)
+  const displayName = user?.displayName || user?.email || ''
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 30000)
@@ -42,12 +43,18 @@ export default function Home() {
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.header}>
-          <Pressable onPress={() => setLangOpen(true)} style={styles.langBtn}>
-            <FontAwesome name="globe" size={12} color={colors.white} />
-            <Text style={styles.langText}>{current}</Text>
-          </Pressable>
+          <View style={styles.headerActions}>
+            <Pressable onPress={() => setLangOpen(true)} style={styles.langBtn}>
+              <FontAwesome name="globe" size={12} color={colors.white} />
+              <Text style={styles.langText}>{current}</Text>
+            </Pressable>
+            <Pressable onPress={signOut} style={styles.langBtn}>
+              <FontAwesome name="sign-out" size={12} color={colors.white} />
+              <Text style={styles.langText}>{t.signOut}</Text>
+            </Pressable>
+          </View>
           <Text style={styles.homeTitle}>{t.homeTitle}</Text>
-          <Text style={styles.homeSub}>{t.homeSub}</Text>
+          <Text style={styles.homeSub}>{displayName ? `${t.loginWelcome}, ${displayName}` : t.homeSub}</Text>
         </View>
 
         <View style={styles.body}>
@@ -150,8 +157,12 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 28,
     borderBottomRightRadius: 28,
   },
+  headerActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 8,
+  },
   langBtn: {
-    alignSelf: 'flex-end',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,

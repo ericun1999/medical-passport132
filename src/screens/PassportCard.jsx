@@ -15,6 +15,7 @@ export default function PassportCard() {
   const display = {
     name: passport.name || t.notFilled,
     blood: passport.blood || 'O',
+    contactName: passport.contactName || t.notFilled,
     contact: passport.contact || t.notFilled,
     history: formatHistory(passport.history, t, t.empty),
     allergy: passport.allergy || t.empty,
@@ -26,7 +27,7 @@ export default function PassportCard() {
       t.cardHeader,
       `${t.cardNameTitle}: ${display.name}`,
       `${t.cardBloodTitle}: ${display.blood}${t.bloodSuffix}`,
-      `${t.cardContactTitle}: ${display.contact}`,
+      `${t.cardContactTitle}: ${display.contactName} ${display.contact}`,
       `${t.cardHistoryTitle}: ${display.history}`,
       `${t.cardAllergyTitle}: ${display.allergy}`,
       `${t.cardMedsTitle}: ${display.meds}`,
@@ -101,7 +102,8 @@ export default function PassportCard() {
               </View>
               <View>
                 <Text style={styles.contactLabel}>{t.cardContactTitle}</Text>
-                <Text style={styles.contactValue}>{display.contact}</Text>
+                <Text style={styles.contactValue}>{display.contactName}</Text>
+                <Text style={[styles.contactValue, { fontSize: 13, color: colors.slate600 }]}>{display.contact}</Text>
               </View>
             </View>
             <Text style={styles.muted}>{t.cardHistoryTitle}</Text>
