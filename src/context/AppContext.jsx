@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { auth, onAuthStateChanged, db } from '../firebase'
 import { signInWithEmail as emailSignIn, registerWithEmail as emailRegister, signOutUser } from '../auth/emailAuth'
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore'
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { translations } from '../i18n/translations'
 import { formatHistory } from '../data/conditions'
@@ -56,6 +56,7 @@ export function AppProvider({ children }) {
   const [user, setUser] = useState(null)
   const [alarms, setAlarms] = useState(defaultAlarms)
   const [notifyOk, setNotifyOk] = useState(false)
+  const [alarmCloudKey, setAlarmCloudKey] = useState(null)
   const alarmsRef = useRef(defaultAlarms)
   alarmsRef.current = alarms
 
@@ -104,10 +105,42 @@ export function AppProvider({ children }) {
   }, [passport, ready])
 
   useEffect(() => {
+    if (!ready || !authReady) return undefined
+    let cancelled = false
+    const uid = user?.uid || ''
+    setAlarmCloudKey(null)
+    ;(async () => {
+      if (db && uid) {
+        try {
+          const snap = await getDoc(doc(db, 'alarms', uid))
+          if (cancelled) return
+          const items = snap.exists() ? snap.data()?.items : null
+          if (Array.isArray(items)) setAlarms(items)
+        } catch (err) {
+          console.error('Failed to load alarms from firestore', err)
+        }
+      }
+      if (!cancelled) setAlarmCloudKey(uid)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [ready, authReady, user?.uid])
+
+  useEffect(() => {
     if (!ready) return
     AsyncStorage.setItem(STORAGE_KEYS.alarms, JSON.stringify(alarms)).catch(() => {})
     syncAlarmNotifications(alarms).catch((err) => console.error('Alarm sync failed', err))
   }, [alarms, ready])
+
+  useEffect(() => {
+    if (!ready || !alarmCloudKey || alarmCloudKey !== user?.uid || !db) return
+    setDoc(doc(db, 'alarms', user.uid), {
+      items: alarms,
+      uid: user.uid,
+      updatedAt: serverTimestamp(),
+    }).catch((err) => console.error('Failed to save alarms to firestore', err))
+  }, [alarms, ready, alarmCloudKey, user?.uid])
 
   useEffect(() => {
     if (!ready) return
