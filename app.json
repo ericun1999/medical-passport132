@@ -71,6 +71,13 @@
           "sounds": []
         }
       ],
+      [
+        "react-native-ble-manager",
+        {
+          "neverForLocation": true,
+          "bluetoothAlwaysPermission": "Allow Bluetooth access to connect to your SmartPillBox."
+        }
+      ],
       "@react-native-community/datetimepicker"
     ],
     "extra": {

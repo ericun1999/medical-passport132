@@ -4,6 +4,7 @@ import { signInWithEmail as emailSignIn, registerWithEmail as emailRegister, sig
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { translations } from '../i18n/translations'
+import { DEFAULT_TOLERANCE, MAX_DAYS, formatDateInput } from '../ble/smartPill'
 import { formatHistory } from '../data/conditions'
 import { initNotifications, ringAlarm, startForegroundWatcher, syncAlarmNotifications, testAlarmInSeconds } from '../notifications'
 
@@ -11,6 +12,7 @@ const STORAGE_KEYS = {
   lang: 'mp-lang',
   passport: 'mp-passport',
   alarms: 'mp-alarms',
+  pillbox: 'mp-pillbox',
 }
 
 const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbzkWydn3n50G70nngq5_4oWLsK6QlReDsYcoUZb7Bffl-bCiW6s7O6X87gfm0_-mgZd/exec'
@@ -46,6 +48,13 @@ const defaultAlarms = [
   },
 ]
 
+// Alarms supply the pillbox dose times; these settings own the cycle itself.
+const defaultPillbox = {
+  startDate: formatDateInput(new Date()),
+  dayCount: MAX_DAYS,
+  tolerance: DEFAULT_TOLERANCE,
+}
+
 const AppContext = createContext(null)
 
 export function AppProvider({ children }) {
@@ -55,6 +64,7 @@ export function AppProvider({ children }) {
   const [passport, setPassport] = useState(defaultPassport)
   const [user, setUser] = useState(null)
   const [alarms, setAlarms] = useState(defaultAlarms)
+  const [pillbox, setPillbox] = useState(defaultPillbox)
   const [notifyOk, setNotifyOk] = useState(false)
   const [alarmCloudKey, setAlarmCloudKey] = useState(null)
   const alarmsRef = useRef(defaultAlarms)
@@ -65,14 +75,16 @@ export function AppProvider({ children }) {
   useEffect(() => {
     ;(async () => {
       try {
-        const [savedLang, savedPassport, savedAlarms] = await Promise.all([
+        const [savedLang, savedPassport, savedAlarms, savedPillbox] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEYS.lang),
           AsyncStorage.getItem(STORAGE_KEYS.passport),
           AsyncStorage.getItem(STORAGE_KEYS.alarms),
+          AsyncStorage.getItem(STORAGE_KEYS.pillbox),
         ])
         if (savedLang) setLang(savedLang)
         if (savedPassport) setPassport(JSON.parse(savedPassport))
         if (savedAlarms) setAlarms(JSON.parse(savedAlarms))
+        if (savedPillbox) setPillbox({ ...defaultPillbox, ...JSON.parse(savedPillbox) })
       } catch {
         /* keep defaults */
       }
@@ -114,8 +126,9 @@ export function AppProvider({ children }) {
         try {
           const snap = await getDoc(doc(db, 'alarms', uid))
           if (cancelled) return
-          const items = snap.exists() ? snap.data()?.items : null
-          if (Array.isArray(items)) setAlarms(items)
+          const data = snap.exists() ? snap.data() : null
+          if (Array.isArray(data?.items)) setAlarms(data.items)
+          if (data?.pillbox) setPillbox({ ...defaultPillbox, ...data.pillbox })
         } catch (err) {
           console.error('Failed to load alarms from firestore', err)
         }
@@ -134,13 +147,19 @@ export function AppProvider({ children }) {
   }, [alarms, ready])
 
   useEffect(() => {
+    if (!ready) return
+    AsyncStorage.setItem(STORAGE_KEYS.pillbox, JSON.stringify(pillbox)).catch(() => {})
+  }, [pillbox, ready])
+
+  useEffect(() => {
     if (!ready || !alarmCloudKey || alarmCloudKey !== user?.uid || !db) return
     setDoc(doc(db, 'alarms', user.uid), {
       items: alarms,
+      pillbox,
       uid: user.uid,
       updatedAt: serverTimestamp(),
     }).catch((err) => console.error('Failed to save alarms to firestore', err))
-  }, [alarms, ready, alarmCloudKey, user?.uid])
+  }, [alarms, pillbox, ready, alarmCloudKey, user?.uid])
 
   useEffect(() => {
     if (!ready) return
@@ -204,9 +223,19 @@ export function AppProvider({ children }) {
         }
       },
       alarms,
+      pillbox,
+      savePillbox: (patch) => setPillbox((prev) => ({ ...prev, ...patch })),
       toggleAlarm: (id) =>
         setAlarms((prev) => prev.map((item) => (item.id === id ? { ...item, enabled: !item.enabled } : item))),
       deleteAlarm: (id) => setAlarms((prev) => prev.filter((item) => item.id !== id)),
+      updateAlarm: (id, patch) =>
+        setAlarms((prev) =>
+          prev.map((item) => {
+            if (item.id !== id) return item
+            const next = { ...item, ...patch }
+            return patch.time ? { ...next, period: periodFromTime(patch.time) } : next
+          }),
+        ),
       addAlarm: ({ time, name, tag }) =>
         setAlarms((prev) => [
           ...prev,
@@ -285,7 +314,7 @@ export function AppProvider({ children }) {
         }
       },
     }),
-    [ready, authReady, notifyOk, lang, t, passport, alarms, user],
+    [ready, authReady, notifyOk, lang, t, passport, alarms, pillbox, user],
   )
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>

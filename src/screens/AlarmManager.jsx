@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { FontAwesome } from '@expo/vector-icons'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { useApp } from '../context/AppContext'
+import { fill } from '../i18n/translations'
+import { pickDoseAlarms } from '../ble/smartPill'
 import Toggle from '../components/Toggle'
 import { colors } from '../theme'
 
@@ -19,8 +21,9 @@ function dateToTime(date) {
 }
 
 export default function AlarmManager() {
-  const { t, alarms, toggleAlarm, deleteAlarm, addAlarm, notifyOk, requestNotify, testAlarm } = useApp()
+  const { t, alarms, toggleAlarm, deleteAlarm, addAlarm, updateAlarm, notifyOk, requestNotify, testAlarm } = useApp()
   const [showForm, setShowForm] = useState(false)
+  const [editingId, setEditingId] = useState('')
   const [time, setTime] = useState('08:00')
   const [name, setName] = useState('')
   const [tag, setTag] = useState('')
@@ -28,13 +31,25 @@ export default function AlarmManager() {
   const [pendingDelete, setPendingDelete] = useState(null)
   const pickerDate = useMemo(() => timeToDate(time), [time])
   const activeCount = alarms.filter((item) => item.enabled).length
+  // Which alarms the pillbox is currently driving, so the link is visible here too.
+  const doseIds = useMemo(() => pickDoseAlarms(alarms).map((item) => item?.id || ''), [alarms])
+
+  function openForm(alarm) {
+    setEditingId(alarm?.id || '')
+    setTime(alarm?.time || '08:00')
+    setName(alarm?.name || '')
+    setTag(alarm?.tag || '')
+    setPickerOpen(false)
+    setShowForm(true)
+  }
 
   function handleSave() {
     if (!name.trim()) return
-    addAlarm({ time, name: name.trim(), tag: tag.trim() || t.afterMeal })
-    setName('')
-    setTag('')
+    const payload = { time, name: name.trim(), tag: tag.trim() || t.afterMeal }
+    if (editingId) updateAlarm(editingId, payload)
+    else addAlarm(payload)
     setShowForm(false)
+    setEditingId('')
   }
 
   function confirmDelete() {
@@ -63,36 +78,47 @@ export default function AlarmManager() {
       </Pressable>
 
       <ScrollView contentContainerStyle={styles.list}>
-        {alarms.map((alarm) => (
-          <View key={alarm.id} style={[styles.card, !alarm.enabled && styles.cardOff]}>
-            <View style={[styles.bar, { backgroundColor: alarm.enabled ? colors.emerald500 : colors.slate300 }]} />
-            <View style={styles.cardBody}>
-              <View style={styles.timeRow}>
-                <Text style={[styles.time, !alarm.enabled && styles.strike]}>{alarm.time}</Text>
-                <Text style={styles.period}>{alarm.period}</Text>
-              </View>
-              <Text style={styles.name}>
-                <FontAwesome name="medkit" size={14} color={alarm.enabled ? colors.emerald500 : colors.slate400} /> {alarm.name}
-              </Text>
-              <View style={styles.tag}>
-                <Text style={[styles.tagText, !alarm.enabled && { color: colors.slate500 }]}>{alarm.tag || t.dailyMed}</Text>
-              </View>
-            </View>
-            <View style={styles.actions}>
-              <Toggle checked={alarm.enabled} onChange={() => toggleAlarm(alarm.id)} />
-              <Pressable
-                onPress={() => setPendingDelete(alarm)}
-                style={styles.deleteBtn}
-                accessibilityLabel={t.deleteAlarm}
-              >
-                <FontAwesome name="trash" size={16} color={colors.red600} />
+        {alarms.map((alarm) => {
+          const dose = alarm.id ? doseIds.indexOf(alarm.id) : -1
+          return (
+            <View key={alarm.id} style={[styles.card, !alarm.enabled && styles.cardOff]}>
+              <View style={[styles.bar, { backgroundColor: alarm.enabled ? colors.emerald500 : colors.slate300 }]} />
+              <Pressable onPress={() => openForm(alarm)} style={styles.cardBody}>
+                <View style={styles.timeRow}>
+                  <Text style={[styles.time, !alarm.enabled && styles.strike]}>{alarm.time}</Text>
+                  <Text style={styles.period}>{alarm.period}</Text>
+                  <FontAwesome name="pencil" size={13} color={colors.slate400} />
+                </View>
+                <Text style={styles.name}>
+                  <FontAwesome name="medkit" size={14} color={alarm.enabled ? colors.emerald500 : colors.slate400} /> {alarm.name}
+                </Text>
+                <View style={styles.tagRow}>
+                  <View style={styles.tag}>
+                    <Text style={[styles.tagText, !alarm.enabled && { color: colors.slate500 }]}>{alarm.tag || t.dailyMed}</Text>
+                  </View>
+                  {dose >= 0 ? (
+                    <View style={styles.doseTag}>
+                      <Text style={styles.doseTagText}>{fill(t.deviceBoxDose, { dose: dose + 1 })}</Text>
+                    </View>
+                  ) : null}
+                </View>
               </Pressable>
+              <View style={styles.actions}>
+                <Toggle checked={alarm.enabled} onChange={() => toggleAlarm(alarm.id)} />
+                <Pressable
+                  onPress={() => setPendingDelete(alarm)}
+                  style={styles.deleteBtn}
+                  accessibilityLabel={t.deleteAlarm}
+                >
+                  <FontAwesome name="trash" size={16} color={colors.red600} />
+                </Pressable>
+              </View>
             </View>
-          </View>
-        ))}
+          )
+        })}
       </ScrollView>
 
-      <Pressable onPress={() => setShowForm(true)} style={styles.fab}>
+      <Pressable onPress={() => openForm(null)} style={styles.fab}>
         <FontAwesome name="plus" size={22} color={colors.white} />
       </Pressable>
 
@@ -119,7 +145,7 @@ export default function AlarmManager() {
         <View style={styles.sheetBg}>
           <View style={styles.sheet}>
             <View style={styles.handle} />
-            <Text style={styles.sheetTitle}>{t.addAlarm}</Text>
+            <Text style={styles.sheetTitle}>{editingId ? t.editAlarm : t.addAlarm}</Text>
             <Text style={styles.label}>{t.timeLabel}</Text>
             {Platform.OS === 'web' ? (
               <TextInput value={time} onChangeText={setTime} style={styles.input} placeholder="08:00" />
@@ -203,9 +229,8 @@ const styles = StyleSheet.create({
   strike: { textDecorationLine: 'line-through', color: colors.slate500 },
   period: { fontSize: 13, color: colors.slate500 },
   name: { fontWeight: '700', color: colors.slate700, marginTop: 4 },
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 8 },
   tag: {
-    alignSelf: 'flex-start',
-    marginTop: 8,
     backgroundColor: colors.orange50,
     borderColor: colors.orange100,
     borderWidth: 1,
@@ -214,6 +239,15 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   tagText: { color: colors.orange600, fontSize: 12, fontWeight: '700' },
+  doseTag: {
+    backgroundColor: '#eff6ff',
+    borderColor: '#dbeafe',
+    borderWidth: 1,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  doseTagText: { color: colors.blue700, fontSize: 12, fontWeight: '700' },
   actions: { alignItems: 'center', gap: 12, marginLeft: 8 },
   deleteBtn: {
     width: 36,

@@ -14,6 +14,7 @@ import PassportCard from './src/screens/PassportCard'
 import PublicView from './src/screens/PublicView'
 import ScanMedicine from './src/screens/ScanMedicine'
 import AlarmManager from './src/screens/AlarmManager'
+import PillBox from './src/screens/PillBox'
 import { colors } from './src/theme'
 
 const Tab = createBottomTabNavigator()
@@ -85,6 +86,11 @@ function Root() {
             tabBarIcon: tabIcon('bell'),
             tabBarBadge: activeAlarms || undefined,
           }}
+        />
+        <Tab.Screen
+          name="PillBox"
+          component={PillBox}
+          options={{ tabBarLabel: t.tabDevice, tabBarIcon: tabIcon('bluetooth') }}
         />
       </Tab.Navigator>
     </NavigationContainer>
